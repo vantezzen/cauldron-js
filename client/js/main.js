@@ -60,6 +60,30 @@ window.dumpDB = async () => {
     });
   });
 };
+// Helper function: Dump file names in filesystem
+window.dumpFS = () => {
+  const BrowserFS = require('browserfs')
+  BrowserFS.configure({
+      fs: "LocalStorage"
+  }, ((e) => {
+  if (e) {
+      console.error('BrowserFS error:', e);
+      return;
+  }
+      const fs = BrowserFS.BFSRequire('fs');
+      const stats = fs.statSync('/', false)
+      console.log(stats);
+
+      const files = fs.readdirSync('/overworld', false)
+      console.log(files);
+
+      for (const file of files) {
+        const content = fs.readFileSync('/overworld/' + file);
+        console.log(file, ':', content.byteLength);
+      }
+  }));
+  
+}
 
 
 // Listen for server start

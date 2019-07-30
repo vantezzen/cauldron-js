@@ -1,0 +1,16 @@
+PHASE 1, essentials:
+- Get anvil saving/loading working
+- Show other players
+- Generate world as player moves
+
+PHASE 2, making it playable:
+- Make better world generator
+- Implement inventory storage
+- Implement survival (decrement item counter etc.)
+- Implement chests
+- Implement mobs
+
+PHASE 3, nice to have:
+- Export world
+- Implement sounds
+- Add support for plugins

@@ -4,7 +4,7 @@ const {
 const nbt = require('prismarine-nbt')
 const zlib = require('zlib')
 const BrowserFS = require('browserfs')
-const debug = require('debug')('cauldron:anvil')
+const debug = require('debug')('cauldron:anvil-region')
 
 const deflateAsync = promisify(zlib.deflate)
 const gunzipAsync = promisify(zlib.gunzip)
@@ -258,7 +258,9 @@ class RegionFile {
     buffer.writeUInt32BE(length, 0)
     buffer.writeUInt8(RegionFile.VERSION_DEFLATE, 4)
     data.copy(buffer, 5)
-    fs.writeSync(this.file, buffer, 0, buffer.length, sectorNumber * RegionFile.SECTOR_BYTES)
+    const bytesWritten = fs.writeSync(this.file, buffer, 0, buffer.length, sectorNumber * RegionFile.SECTOR_BYTES)
+    console.log(bytesWritten)
+    // fs.writeSync(this.file, buffer, 0, buffer.length, 0, console.log)
   }
 
   /* is this an invalid chunk coordinate? */
@@ -301,10 +303,7 @@ RegionFile.SECTOR_INTS = 4096 / 4
 
 RegionFile.CHUNK_HEADER_SIZE = 5
 
-if (process.env.NODE_DEBUG && /anvil/.test(process.env.NODE_DEBUG)) {
-  RegionFile.debug = console.log
-} else {
-  RegionFile.debug = () => {}
-}
+
+RegionFile.debug = debug
 
 module.exports = RegionFile

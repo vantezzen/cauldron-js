@@ -20,6 +20,8 @@ By moving all processing and memory intensive work to the browser, `Cauldron.js`
 
     This results in actions sometimes needing up to one second to get to the other clients.
 
+3. `Cauldron.js` saves all game data (worlds etc.) inside the browser. This limits the storage availible to only 10-50MB (depending on the current browser), making it impossible to save larger maps.
+
 ## Usage
 Try a demo of `Cauldron.js` on <...> or [install it on your own server](#Installation).
 
