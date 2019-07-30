@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Cauldron.js - Minecraft Server in your browser">
+  <meta name="keywords" content="minecraft, server, javascript, gaming">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Cauldron.js</title>
+
+  <link rel="shortcut icon" type="image/png" href="/favicon.png">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <img src="icon.png" alt="Icon">
+  <h1>
+    Cauldron.js
+  </h1>
+  <h3>
+    Minecraft Server in your browser
+  </h3>
+  <div id="start-server">
+    <p>Please select your settings and start your server.</p>
+
+    <label for="motd">MOTD</label>
+    <input type="text" id="motd" value="A Cauldron.js Minecraft Server" class="mb" />
+
+    <label for="version">Version</label>
+    <select id="version" class="mb">
+      <option value="1.8">1.8</option>
+      <option value="1.9">1.9</option>
+      <option value="1.10">1.10</option>
+      <option value="1.11">1.11</option>
+      <option value="1.12">1.12</option>
+      <option value="1.13">1.13</option>
+      <option value="1.14">1.14</option>
+    </select>
+
+    <button id="start">
+      Start server
+    </button>
+  </div>
+  <div id="server-online" style="display: none;">
+    <p>Your server is availible at</p>
+    <h3 id="ip"></h3>
+  </div>
+  <div id="server-error" style="display: none;">
+    <p>We could not start your server. Please only open one server per socket connection.</p>
+  </div>
+
+  <script src="dist/bundle.js"></script>
+</body>
+</html>

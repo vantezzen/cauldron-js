@@ -1,0 +1,84 @@
+/**
+ * Cauldron.js - Minecraft Server in your browser
+ * 
+ * main.js - Entry point for frontend
+ * 
+ * @version     0.1.0
+ * @copyright   Copyright vantezzen (https://github.com/vantezzen)
+ * @link        https://github.com/vantezzen/cauldron-js
+ * @license     https://opensource.org/licenses/mit-license.php MIT License
+ */
+import io from 'socket.io-client';
+import Debugger from 'debug'
+import {
+  openDatabase
+} from './storage'
+import MCServer from './mc-server'
+
+// Current MCServer instance
+let server;
+
+// Create debugger for server
+const debug = Debugger('cauldron:main');
+
+// Set default debugging level
+if (!localStorage.debug) {
+  localStorage.debug = 'cauldron:*'
+}
+
+// Open database
+const db = openDatabase();
+
+// Setup socket connection
+const socket = io();
+socket.on('connect', () => {
+  debug('Connected socket to server with ID of', socket.io.engine.id)
+})
+
+// Listen for new client login
+socket.on('login', client => {
+  debug('New client connected with ID of', client.id);
+
+  server.newClient(client);
+})
+
+// Listen for minecraft client events
+socket.on('event', (event, data, metadata, id, uuid) => {
+  server.handleEvent(event, data, metadata, id, uuid)
+})
+
+// Helper function: Dump Dexie database to console
+window.dumpDB = async () => {
+  db.tables.forEach(function (table, i) {
+    var primKeyAndIndexes = [table.schema.primKey].concat(table.schema.indexes);
+    var schemaSyntax = primKeyAndIndexes.map(function (index) {
+      return index.src;
+    }).join(',');
+    console.log('Table dump: ', table.name, schemaSyntax);
+    table.each(function (object) {
+      console.log(object);
+    });
+  });
+};
+
+
+// Listen for server start
+document.getElementById('start').addEventListener('click', () => {
+  const version = document.getElementById('version').value;
+  const motd = document.getElementById('motd').value;
+
+  socket.emit('create server', version, motd, (ip) => {
+    if (ip === 0) {
+      // Error while creating server
+      document.getElementById('start-server').style.display = 'none';
+      document.getElementById('server-error').style.display = 'block';
+      return;
+    }
+    // Setup MC Server
+    server = new MCServer(socket, version, db);
+
+    document.getElementById('start-server').style.display = 'none';
+    document.getElementById('server-online').style.display = 'block';
+    document.getElementById('ip').innerText = ip;
+  });
+});
