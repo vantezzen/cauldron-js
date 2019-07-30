@@ -1,112 +1,113 @@
+const {
+  promisify
+} = require('es6-promisify')
 const nbt = require('prismarine-nbt')
-const {promisify} = require("es6-promisify")
 const zlib = require('zlib')
-const debug = require('debug')('couldron:anvil')
 const BrowserFS = require('browserfs')
-
-let fs;
-
-BrowserFS.configure({
-  fs: "LocalStorage",
-}, function (e) {
-  if (e) {
-    throw e;
-  }
-  fs = BrowserFS.BFSRequire('fs');
-});
+const debug = require('debug')('cauldron:anvil')
 
 const deflateAsync = promisify(zlib.deflate)
 const gunzipAsync = promisify(zlib.gunzip)
 const inflateAsync = promisify(zlib.inflate)
 
-function createFilledBuffer (size, value) {
+let fs, path;
+BrowserFS.configure({
+  fs: "LocalStorage"
+}, function (e) {
+  if (e) {
+    console.error('BrowserFS error:', e);
+    return;
+  }
+
+  fs = BrowserFS.BFSRequire('fs');
+  path = BrowserFS.BFSRequire('path');
+  debug('BrowserFS ready', fs);
+});
+
+function createFilledBuffer(size, value) {
   const b = Buffer.alloc(size)
   b.fill(value)
   return b
 }
 
 class RegionFile {
-  constructor (path) {
+  constructor(path) {
     this.fileName = path
     this.lastModified = 0
     this.q = Promise.resolve()
-
-    if (!fs.existsSync('overworld')) {
-      fs.mkdirSync('overworld')
-    }
   }
 
-  async initialize () {
+  async initialize() {
     this.ini = this._initialize()
     await this.ini
   }
 
-  async _initialize () {
-    this.offsets = []
-    this.chunkTimestamps = []
+  async _initialize() {
+    const self = this;
 
-    this.sizeDelta = 0
+    self.offsets = []
+    self.chunkTimestamps = []
 
-    if (!fs.existsSync(this.fileName)) {
-      this.file = fs.createFile(this.fileName, 'r+')
-    } else {
-      try {
-        this.file = fs.openSync(this.fileName, 'r+')
-      } catch (err) {
-        this.file = fs.openSync(this.fileName, 'w+')
+    self.sizeDelta = 0
+
+    fs.exists(self.fileName, async (exists) => {
+      if (!exists) {
+        self.file = fs.openSync(self.fileName, 'w+')
+      } else {
+        self.file = fs.openSync(self.fileName, 'r+')
       }
-    }
 
-    
+      let stat = fs.statSync(self.fileName)
+      
+      if (stat.isFile()) {
+        self.lastModified = stat.mtime
+      }
 
-    let stat = fs.statSync(this.fileName)
-    if (stat.isFile()) {
-      this.lastModified = stat.mtime
-    }
+      if (stat.size < RegionFile.SECTOR_BYTES) {
+        fs.writeSync(self.file, createFilledBuffer(RegionFile.SECTOR_BYTES, 0), 0, RegionFile.SECTOR_BYTES, 0)
+        fs.writeSync(self.file, createFilledBuffer(RegionFile.SECTOR_BYTES, 0), 0, RegionFile.SECTOR_BYTES, RegionFile.SECTOR_BYTES)
 
-    if (stat.size < RegionFile.SECTOR_BYTES) {
-      this.file.writeSync(createFilledBuffer(RegionFile.SECTOR_BYTES, 0), 0, RegionFile.SECTOR_BYTES, 0)
-      this.file.writeSync(createFilledBuffer(RegionFile.SECTOR_BYTES, 0), 0, RegionFile.SECTOR_BYTES, RegionFile.SECTOR_BYTES)
+        self.sizeDelta += RegionFile.SECTOR_BYTES * 2
+      }
 
-      this.sizeDelta += RegionFile.SECTOR_BYTES * 2
-    }
+      if ((stat.size & 0xfff) !== 0) {
+        /* the file size is not a multiple of 4KB, grow it */
+        const remaining = RegionFile.SECTOR_BYTES - stat.size & 0xfff
+        fs.writeSync(self.file, createFilledBuffer(remaining, 0), 0, remaining, stat.size)
+      }
 
-    if ((stat.size & 0xfff) !== 0) {
-      /* the file size is not a multiple of 4KB, grow it */
-      const remaining = RegionFile.SECTOR_BYTES - stat.size & 0xfff
-      fs.writeFile(this.file, createFilledBuffer(remaining, 0), 0, remaining, stat.size)
-    }
+      /* set up the available sector map */
+      const nSectors = stat.size / RegionFile.SECTOR_BYTES
+      self.sectorFree = []
 
-    /* set up the available sector map */
-    const nSectors = stat.size / RegionFile.SECTOR_BYTES
-    this.sectorFree = []
+      for (let i = 0; i < nSectors; ++i) {
+        self.sectorFree.push(true)
+      }
 
-    for (let i = 0; i < nSectors; ++i) {
-      this.sectorFree.push(true)
-    }
+      self.sectorFree[0] = false // chunk offset table
+      self.sectorFree[1] = false // for the last modified info
 
-    this.sectorFree[0] = false // chunk offset table
-    this.sectorFree[1] = false // for the last modified info
-
-    const offsets = (fs.readFileSync(this.file, Buffer.alloc(RegionFile.SECTOR_BYTES), 0, RegionFile.SECTOR_BYTES, 0)).buffer
-    for (let i = 0; i < RegionFile.SECTOR_INTS; ++i) {
-      let offset = offsets.readUInt32BE(i * 4)
-      this.offsets[i] = offset
-      if (offset !== 0 && (offset >> 8) + (offset & 0xFF) <= this.sectorFree.length) {
-        for (let sectorNum = 0; sectorNum < (offset & 0xFF); ++sectorNum) {
-          this.sectorFree[(offset >> 8) + sectorNum] = false
+      const offsets = Buffer.alloc(RegionFile.SECTOR_BYTES);
+      (fs.readSync(self.file, offsets, 0, RegionFile.SECTOR_BYTES, 0))
+      for (let i = 0; i < RegionFile.SECTOR_INTS; ++i) {
+        let offset = offsets.readUInt32BE(i * 4)
+        self.offsets[i] = offset
+        if (offset !== 0 && (offset >> 8) + (offset & 0xFF) <= self.sectorFree.length) {
+          for (let sectorNum = 0; sectorNum < (offset & 0xFF); ++sectorNum) {
+            self.sectorFree[(offset >> 8) + sectorNum] = false
+          }
         }
       }
-    }
-    const chunkTimestamps = (fs.readFileSync(this.file, Buffer.alloc(RegionFile.SECTOR_BYTES), 0, RegionFile.SECTOR_BYTES,
-      RegionFile.SECTOR_BYTES)).buffer
-    for (let i = 0; i < RegionFile.SECTOR_INTS; ++i) {
-      this.chunkTimestamps[i] = chunkTimestamps.readUInt32BE(i * 4)
-    }
+      const chunkTimestamps = Buffer.alloc(RegionFile.SECTOR_BYTES);
+      (fs.readSync(self.file, chunkTimestamps, 0, RegionFile.SECTOR_BYTES, RegionFile.SECTOR_BYTES))
+      for (let i = 0; i < RegionFile.SECTOR_INTS; ++i) {
+        self.chunkTimestamps[i] = chunkTimestamps.readUInt32BE(i * 4)
+      }
+    })
   }
 
   /* gets how much the region file has grown since it was last checked */
-  getSizeDelta () {
+  getSizeDelta() {
     const ret = this.sizeDelta
     this.sizeDelta = 0
     return ret
@@ -116,7 +117,7 @@ class RegionFile {
    * gets an (uncompressed) stream representing the chunk data returns null if
    * the chunk is not found or an error occurs
    */
-  async read (x, z) {
+  async read(x, z) {
     await this.ini
     if (RegionFile.outOfBounds(x, z)) {
       throw new Error('READ ' + x + ',' + z + ' out of bounds')
@@ -136,7 +137,9 @@ class RegionFile {
       return null
     }
 
-    const length = (fs.readFileSync(this.file, Buffer.alloc(4), 0, 4, sectorNumber * RegionFile.SECTOR_BYTES)).buffer.readUInt32BE(0)
+    const lengthBuffer = Buffer.alloc(4);
+    (fs.readSync(this.file, lengthBuffer, 0, 4, sectorNumber * RegionFile.SECTOR_BYTES));
+    const length = lengthBuffer.readUInt32BE(0)
 
     if (length <= 1) {
       throw new Error('wrong length ' + length)
@@ -147,8 +150,12 @@ class RegionFile {
       return null
     }
 
-    const version = (fs.readFileSync(this.file, Buffer.alloc(1), 0, 1, sectorNumber * RegionFile.SECTOR_BYTES + 4)).buffer.readUInt8(0)
-    const data = (fs.readFileSync(this.file, Buffer.alloc(length - 1), 0, length - 1, sectorNumber * RegionFile.SECTOR_BYTES + 5)).buffer
+    const versionBuffer = Buffer.alloc(1);
+    (await fs.read(this.file, versionBuffer, 0, 1, sectorNumber * RegionFile.SECTOR_BYTES + 4));
+    const version = versionBuffer.readUInt8(0)
+
+    const data = Buffer.alloc(length - 1);
+    (await fs.read(this.file, data, 0, length - 1, sectorNumber * RegionFile.SECTOR_BYTES + 5))
 
     let decompress
     if (version === RegionFile.VERSION_GZIP) { // gzip
@@ -162,14 +169,13 @@ class RegionFile {
     return decompress(data).then(nbt.parseUncompressed)
   }
 
-  async write (x, z, nbtData) {
-    console.log('WRITING ANVIL FILe');
+  async write(x, z, nbtData) {
     this.q = this.q.then(() => this._write(x, z, nbtData))
     await this.q
   }
 
   /* write a chunk at (x,z) with length bytes of data to disk */
-  async _write (x, z, nbtData) {
+  async _write(x, z, nbtData) {
     await this.ini
     const uncompressedData = nbt.writeUncompressed(nbtData)
     const data = await deflateAsync(uncompressedData)
@@ -235,7 +241,7 @@ class RegionFile {
         sectorNumber = this.sectorFree.length
         let stat = fs.statSync(this.fileName)
         let toGrow = sectorsNeeded * RegionFile.SECTOR_BYTES
-        fs.writeFile(this.file, createFilledBuffer(toGrow, 0), 0, toGrow, stat.size)
+        fs.writeSync(this.file, createFilledBuffer(toGrow, 0), 0, toGrow, stat.size)
         for (let i = 0; i < sectorsNeeded; ++i) this.sectorFree.push(false)
         this.sizeDelta += RegionFile.SECTOR_BYTES * sectorsNeeded
 
@@ -247,43 +253,43 @@ class RegionFile {
     RegionFile.debug('FINISH SAVE ' + x + ', ' + z + ', ' + length)
   }
 
-  async writeChunk (sectorNumber, data, length) {
+  async writeChunk(sectorNumber, data, length) {
     const buffer = Buffer.alloc(4 + 1 + length)
     buffer.writeUInt32BE(length, 0)
     buffer.writeUInt8(RegionFile.VERSION_DEFLATE, 4)
     data.copy(buffer, 5)
-    fs.writeFile(this.file, buffer, 0, buffer.length, sectorNumber * RegionFile.SECTOR_BYTES)
+    fs.writeSync(this.file, buffer, 0, buffer.length, sectorNumber * RegionFile.SECTOR_BYTES)
   }
 
   /* is this an invalid chunk coordinate? */
-  static outOfBounds (x, z) {
+  static outOfBounds(x, z) {
     return x < 0 || x >= 32 || z < 0 || z >= 32
   }
 
-  getOffset (x, z) {
+  getOffset(x, z) {
     return this.offsets[x + z * 32]
   }
 
-  hasChunk (x, z) {
+  hasChunk(x, z) {
     return this.getOffset(x, z) !== 0
   }
 
-  async setOffset (x, z, offset) {
+  async setOffset(x, z, offset) {
     this.offsets[x + z * 32] = offset
     const buffer = Buffer.alloc(4)
     buffer.writeInt32BE(offset, 0)
-    fs.writeFile(this.file, buffer, 0, buffer.length, (x + z * 32) * 4)
+    fs.writeSync(this.file, buffer, 0, buffer.length, (x + z * 32) * 4)
   }
 
-  async setTimestamp (x, z, value) {
+  async setTimestamp(x, z, value) {
     this.chunkTimestamps[x + z * 32] = value
     const buffer = Buffer.alloc(4)
     buffer.writeInt32BE(value, 0)
-    fs.writeFile(this.file, buffer, 0, buffer.length, RegionFile.SECTOR_BYTES + (x + z * 32) * 4)
+    fs.writeSync(this.file, buffer, 0, buffer.length, RegionFile.SECTOR_BYTES + (x + z * 32) * 4)
   }
 
-  async close () {
-    // await fs.close(this.file)
+  async close() {
+    fs.close(this.file)
   };
 }
 
@@ -295,6 +301,10 @@ RegionFile.SECTOR_INTS = 4096 / 4
 
 RegionFile.CHUNK_HEADER_SIZE = 5
 
-RegionFile.debug = debug
+if (process.env.NODE_DEBUG && /anvil/.test(process.env.NODE_DEBUG)) {
+  RegionFile.debug = console.log
+} else {
+  RegionFile.debug = () => {}
+}
 
 module.exports = RegionFile

@@ -160,6 +160,7 @@ class World extends EventEmitter {
     };
 
     async setBlock(pos, block) {
+        pos = new Vec3(pos.x, pos.y, pos.z)
         pos = pos.floored();
         (await this.getColumnAt(pos)).setBlock(posInChunk(pos), block)
         this.saveAt(pos)

@@ -17,7 +17,6 @@
     "filer": "^1.1.2",
     "ip": "^1.1.5",
     "minecraft-protocol": "^1.9.3",
-    "node-promise-es6": "^0.3.2",
     "prismarine-chunk": "^1.11.0",
     "prismarine-nbt": "^1.2.1",
     "random-seed": "^0.3.0",

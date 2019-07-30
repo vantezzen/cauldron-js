@@ -1,17 +1,26 @@
 import spiralloop from 'spiralloop'
 
 import World from './world/index'
-import generator from './world/generators/nether'
-import Filer from 'filer'
+import generator from './world/generators/grass'
+const BrowserFS = require('browserfs')
 
 export default class MCWorld {
     constructor(version, server) {
-        const fs = new Filer.FileSystem();
+        const self = this;
 
-        fs.mkdir('/overworld', () => {
-            this.world = new(World(version))(generator(version), '/overworld');
-            this.server = server;
-        });        
+        BrowserFS.configure({
+            fs: "LocalStorage"
+        }, ((e) => {
+        if (e) {
+            console.error('BrowserFS error:', e);
+            return;
+        }
+            const fs = BrowserFS.BFSRequire('fs');
+            fs.mkdir('/overworld', (() => {
+                self.world = new(World(version))(generator(version), '/overworld');
+                self.server = server;
+            }));    
+        }));
     }
 
     pregen(size) {
