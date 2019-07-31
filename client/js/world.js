@@ -2,25 +2,15 @@ import spiralloop from 'spiralloop'
 
 import World from './world/index'
 import generator from './world/generators/grass'
-const BrowserFS = require('browserfs')
+import Debugger from 'debug'
+const debug = Debugger('cauldron:mc-world')
 
 export default class MCWorld {
     constructor(version, server) {
-        const self = this;
+        this.world = new(World(version))(generator(version), '/overworld');
+        this.server = server;
 
-        BrowserFS.configure({
-            fs: "LocalStorage"
-        }, ((e) => {
-        if (e) {
-            console.error('BrowserFS error:', e);
-            return;
-        }
-            const fs = BrowserFS.BFSRequire('fs');
-            fs.mkdir('/overworld', (() => {
-                self.world = new(World(version))(generator(version), '/overworld');
-                self.server = server;
-            }));    
-        }));
+        debug('Constructed new MCWorld');
     }
 
     pregen(size) {
@@ -36,7 +26,7 @@ export default class MCWorld {
     }
 
     sendNearbyChunks(player) {
-        console.log('A', player.uuid);
+        debug('Sending nearby chunks to player ' + player);
         // Get current player position
         this.server.db.players.get(player.uuid).then(data => {
             let position;
@@ -86,7 +76,6 @@ export default class MCWorld {
 
                 this.world.getColumn(chunkX, chunkZ)
                 .then((column) => {
-                    this.world.setColumn(chunkX, chunkZ, column)
                     this.sendChunk(player.id, chunkX, chunkZ, column)
                 })
             }

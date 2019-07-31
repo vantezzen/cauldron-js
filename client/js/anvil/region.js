@@ -3,26 +3,13 @@ const {
 } = require('es6-promisify')
 const nbt = require('prismarine-nbt')
 const zlib = require('zlib')
-const BrowserFS = require('browserfs')
 const debug = require('debug')('cauldron:anvil-region')
+const AnvilFS = require('./fs').default
+const fs = new AnvilFS;
 
 const deflateAsync = promisify(zlib.deflate)
 const gunzipAsync = promisify(zlib.gunzip)
 const inflateAsync = promisify(zlib.inflate)
-
-let fs, path;
-BrowserFS.configure({
-  fs: "LocalStorage"
-}, function (e) {
-  if (e) {
-    console.error('BrowserFS error:', e);
-    return;
-  }
-
-  fs = BrowserFS.BFSRequire('fs');
-  path = BrowserFS.BFSRequire('path');
-  debug('BrowserFS ready', fs);
-});
 
 function createFilledBuffer(size, value) {
   const b = Buffer.alloc(size)
@@ -50,46 +37,39 @@ class RegionFile {
 
     self.sizeDelta = 0
 
-    fs.exists(self.fileName, async (exists) => {
-      if (!exists) {
-        self.file = fs.openSync(self.fileName, 'w+')
-      } else {
-        self.file = fs.openSync(self.fileName, 'r+')
-      }
-
-      let stat = fs.statSync(self.fileName)
+    let stat = fs.stat(self.fileName)
       
-      if (stat.isFile()) {
-        self.lastModified = stat.mtime
-      }
+    // if (stat.isFile()) {
+    //   self.lastModified = stat.mtime
+    // }
 
-      if (stat.size < RegionFile.SECTOR_BYTES) {
-        fs.writeSync(self.file, createFilledBuffer(RegionFile.SECTOR_BYTES, 0), 0, RegionFile.SECTOR_BYTES, 0)
-        fs.writeSync(self.file, createFilledBuffer(RegionFile.SECTOR_BYTES, 0), 0, RegionFile.SECTOR_BYTES, RegionFile.SECTOR_BYTES)
+    if (stat.size < RegionFile.SECTOR_BYTES) {
+      fs.write(self.fileName, createFilledBuffer(RegionFile.SECTOR_BYTES, 0), 0)
+      fs.write(self.fileName, createFilledBuffer(RegionFile.SECTOR_BYTES, 0), RegionFile.SECTOR_BYTES)
 
-        self.sizeDelta += RegionFile.SECTOR_BYTES * 2
-      }
+      self.sizeDelta += RegionFile.SECTOR_BYTES * 2
+    }
 
-      if ((stat.size & 0xfff) !== 0) {
-        /* the file size is not a multiple of 4KB, grow it */
-        const remaining = RegionFile.SECTOR_BYTES - stat.size & 0xfff
-        fs.writeSync(self.file, createFilledBuffer(remaining, 0), 0, remaining, stat.size)
-      }
+    if ((stat.size & 0xfff) !== 0) {
+      /* the file size is not a multiple of 4KB, grow it */
+      const remaining = RegionFile.SECTOR_BYTES - stat.size & 0xfff
+      fs.write(self.fileName, createFilledBuffer(remaining, 0), stat.size)
+    }
 
-      /* set up the available sector map */
-      const nSectors = stat.size / RegionFile.SECTOR_BYTES
-      self.sectorFree = []
+    /* set up the available sector map */
+    const nSectors = stat.size / RegionFile.SECTOR_BYTES
+    self.sectorFree = []
 
-      for (let i = 0; i < nSectors; ++i) {
-        self.sectorFree.push(true)
-      }
+    for (let i = 0; i < nSectors; ++i) {
+      self.sectorFree.push(true)
+    }
 
-      self.sectorFree[0] = false // chunk offset table
-      self.sectorFree[1] = false // for the last modified info
+    self.sectorFree[0] = false // chunk offset table
+    self.sectorFree[1] = false // for the last modified info
 
-      const offsets = Buffer.alloc(RegionFile.SECTOR_BYTES);
-      (fs.readSync(self.file, offsets, 0, RegionFile.SECTOR_BYTES, 0))
-      for (let i = 0; i < RegionFile.SECTOR_INTS; ++i) {
+    const offsets = fs.read(self.fileName, 0, RegionFile.SECTOR_BYTES);
+    for (let i = 0; i < RegionFile.SECTOR_INTS; ++i) {
+      try {
         let offset = offsets.readUInt32BE(i * 4)
         self.offsets[i] = offset
         if (offset !== 0 && (offset >> 8) + (offset & 0xFF) <= self.sectorFree.length) {
@@ -97,13 +77,18 @@ class RegionFile {
             self.sectorFree[(offset >> 8) + sectorNum] = false
           }
         }
+      } catch (e) {
+        debug('Error:', e);
       }
-      const chunkTimestamps = Buffer.alloc(RegionFile.SECTOR_BYTES);
-      (fs.readSync(self.file, chunkTimestamps, 0, RegionFile.SECTOR_BYTES, RegionFile.SECTOR_BYTES))
-      for (let i = 0; i < RegionFile.SECTOR_INTS; ++i) {
-        self.chunkTimestamps[i] = chunkTimestamps.readUInt32BE(i * 4)
+    }
+    const chunkTimestamps = fs.read(self.fileName, RegionFile.SECTOR_BYTES, RegionFile.SECTOR_BYTES)
+    for (let i = 0; i < RegionFile.SECTOR_INTS; ++i) {
+      try {
+        self.chunkTimestamps[i] = chunkTimestamps.readUInt32BE(i * 4);
+      } catch(e) {
+        debug('Error:', e);
       }
-    })
+    }
   }
 
   /* gets how much the region file has grown since it was last checked */
@@ -114,8 +99,8 @@ class RegionFile {
   }
 
   /*
-   * gets an (uncompressed) stream representing the chunk data returns null if
-   * the chunk is not found or an error occurs
+   * gets an (uncompressed) stream representing the chunk data 
+   * returns null if the chunk is not found or an error occurs
    */
   async read(x, z) {
     await this.ini
@@ -137,12 +122,15 @@ class RegionFile {
       return null
     }
 
-    const lengthBuffer = Buffer.alloc(4);
-    (fs.readSync(this.file, lengthBuffer, 0, 4, sectorNumber * RegionFile.SECTOR_BYTES));
+    const lengthBuffer = fs.read(this.fileName, 4, sectorNumber * RegionFile.SECTOR_BYTES)
+    // Buffer.alloc(4);
+    // (fs.readSync(this.file, lengthBuffer, 0, 4, sectorNumber * RegionFile.SECTOR_BYTES));
     const length = lengthBuffer.readUInt32BE(0)
+    RegionFile.debug('LENGTH', lengthBuffer, length);
 
     if (length <= 1) {
-      throw new Error('wrong length ' + length)
+      RegionFile.debug('READ' + x + ',' + z + ' invalid length: ' + length)
+      return null
     }
 
     if (length > RegionFile.SECTOR_BYTES * numSectors) {
@@ -150,12 +138,14 @@ class RegionFile {
       return null
     }
 
-    const versionBuffer = Buffer.alloc(1);
-    (await fs.read(this.file, versionBuffer, 0, 1, sectorNumber * RegionFile.SECTOR_BYTES + 4));
+    const versionBuffer = fs.read(this.fileName, 1, sectorNumber * RegionFile.SECTOR_BYTES + 4);
+    // const versionBuffer = Buffer.alloc(1);
+    // (await fs.read(this.file, versionBuffer, 0, 1, sectorNumber * RegionFile.SECTOR_BYTES + 4));
     const version = versionBuffer.readUInt8(0)
 
-    const data = Buffer.alloc(length - 1);
-    (await fs.read(this.file, data, 0, length - 1, sectorNumber * RegionFile.SECTOR_BYTES + 5))
+    const data = fs.read(this.fileName, length - 1, sectorNumber * RegionFile.SECTOR_BYTES + 5)
+    // const data = Buffer.alloc(length - 1);
+    // (await fs.read(this.file, data, 0, length - 1, sectorNumber * RegionFile.SECTOR_BYTES + 5))
 
     let decompress
     if (version === RegionFile.VERSION_GZIP) { // gzip
@@ -239,9 +229,9 @@ class RegionFile {
         RegionFile.debug('SAVE ' + x + ', ' + z + ', ' + length + ' grow')
 
         sectorNumber = this.sectorFree.length
-        let stat = fs.statSync(this.fileName)
+        let stat = fs.stat(this.fileName)
         let toGrow = sectorsNeeded * RegionFile.SECTOR_BYTES
-        fs.writeSync(this.file, createFilledBuffer(toGrow, 0), 0, toGrow, stat.size)
+        fs.write(this.fileName, createFilledBuffer(toGrow, 0), stat.size)
         for (let i = 0; i < sectorsNeeded; ++i) this.sectorFree.push(false)
         this.sizeDelta += RegionFile.SECTOR_BYTES * sectorsNeeded
 
@@ -258,9 +248,9 @@ class RegionFile {
     buffer.writeUInt32BE(length, 0)
     buffer.writeUInt8(RegionFile.VERSION_DEFLATE, 4)
     data.copy(buffer, 5)
-    const bytesWritten = fs.writeSync(this.file, buffer, 0, buffer.length, sectorNumber * RegionFile.SECTOR_BYTES)
-    console.log(bytesWritten)
-    // fs.writeSync(this.file, buffer, 0, buffer.length, 0, console.log)
+    fs.write(this.fileName, buffer, sectorNumber * RegionFile.SECTOR_BYTES)
+    // const bytesWritten = fs.write(this.file, buffer, 0, buffer.length, sectorNumber * RegionFile.SECTOR_BYTES)
+    // fs.write(this.file, buffer, 0, buffer.length, 0, console.log)
   }
 
   /* is this an invalid chunk coordinate? */
@@ -280,18 +270,18 @@ class RegionFile {
     this.offsets[x + z * 32] = offset
     const buffer = Buffer.alloc(4)
     buffer.writeInt32BE(offset, 0)
-    fs.writeSync(this.file, buffer, 0, buffer.length, (x + z * 32) * 4)
+    fs.write(this.fileName, buffer, buffer.length, (x + z * 32) * 4)
   }
 
   async setTimestamp(x, z, value) {
     this.chunkTimestamps[x + z * 32] = value
     const buffer = Buffer.alloc(4)
     buffer.writeInt32BE(value, 0)
-    fs.writeSync(this.file, buffer, 0, buffer.length, RegionFile.SECTOR_BYTES + (x + z * 32) * 4)
+    fs.write(this.fileName, buffer, RegionFile.SECTOR_BYTES + (x + z * 32) * 4)
   }
 
   async close() {
-    fs.close(this.file)
+    // fs.close(this.file)
   };
 }
 

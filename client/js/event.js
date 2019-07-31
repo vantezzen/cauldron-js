@@ -9,6 +9,8 @@
  * @license     https://opensource.org/licenses/mit-license.php MIT License
  */
 import events from './events'
+import Debugger from 'debug'
+const debug = Debugger('cauldron:mc-event')
 
 export default class MCEvent {
     constructor() {
@@ -24,10 +26,13 @@ export default class MCEvent {
                 event.handle
             );
         }
+
+        debug('Constructed MCEvent for ' + Object.keys(this.events).length + ' events')
     }
 
     // Handle new event
     handle(event, data, metadata, id, uuid, server) {
+        // debug('Handling new MCEvent', event, id);
         if (this.events[event]) {
             for (const handler of this.events[event]) {
                 handler(event, data, metadata, id, uuid, server);

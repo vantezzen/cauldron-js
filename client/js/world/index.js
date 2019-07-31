@@ -4,6 +4,7 @@ const fifo = require('fifo')
 const EventEmitter = require('events').EventEmitter
 const once = require('event-promise')
 const AnvilSave = require('../anvil').Anvil;
+const debug = require('debug')('cauldron:world')
 
 function columnKeyXZ(chunkX, chunkZ) {
     return chunkX + ',' + chunkZ
@@ -78,8 +79,10 @@ class World extends EventEmitter {
             var chunk = null
             if (this.anvil != null) {
                 var data = await this.anvil.load(chunkX, chunkZ)
+                debug('Got data from anvil: ', data);
                 if (data != null) {
                     chunk = data
+                    debug('Using data from anvil for chunk');
                 }
             }
             const loaded = chunk != null

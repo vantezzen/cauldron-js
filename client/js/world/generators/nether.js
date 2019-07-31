@@ -17,6 +17,7 @@ export default function generation (version) {
         for (let y = 0; y < 128; y++) { // Nether only goes up to 128
           let block
           let data
+          let level = 50;
 
           if (y < bedrockheightbottom) block = 7
           else if (y < level) block = seedRand(50) === 0 ? 89 : 87

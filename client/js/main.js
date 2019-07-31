@@ -14,6 +14,7 @@ import {
   openDatabase
 } from './storage'
 import MCServer from './mc-server'
+import AnvilFS from './anvil/fs'
 
 // Current MCServer instance
 let server;
@@ -79,30 +80,41 @@ window.dumpFS = () => {
 
       for (const file of files) {
         const content = fs.readFileSync('/overworld/' + file);
-        console.log(file, ':', content.byteLength);
+        console.log(file, ':', content);
       }
   }));
   
 }
 
+window.fs = new AnvilFS;
+window.Buffer = Buffer;
 
 // Listen for server start
 document.getElementById('start').addEventListener('click', () => {
   const version = document.getElementById('version').value;
   const motd = document.getElementById('motd').value;
 
+  debug('Starting MC Server with data:', version, motd)
+
+  document.getElementById('start-server').style.display = 'none';
+  document.getElementById('server-starting').style.display = 'block';
+
   socket.emit('create server', version, motd, (ip) => {
     if (ip === 0) {
+      debug('Error while starting server: Got response', ip);
+
       // Error while creating server
-      document.getElementById('start-server').style.display = 'none';
       document.getElementById('server-error').style.display = 'block';
+      document.getElementById('server-starting').style.display = 'none';
       return;
     }
+    debug('Started MC Server proxy on IP', ip);
+
     // Setup MC Server
     server = new MCServer(socket, version, db);
 
-    document.getElementById('start-server').style.display = 'none';
     document.getElementById('server-online').style.display = 'block';
+    document.getElementById('server-starting').style.display = 'none';
     document.getElementById('ip').innerText = ip;
   });
 });

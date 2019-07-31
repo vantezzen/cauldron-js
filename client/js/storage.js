@@ -9,6 +9,8 @@
  * @license     https://opensource.org/licenses/mit-license.php MIT License
  */
 import Dexie from 'dexie'
+import Debugger from 'debug'
+const debug = Debugger('cauldron:storage')
 
 export const openDatabase = () => {
     // Create database using Dexie
@@ -16,6 +18,8 @@ export const openDatabase = () => {
     db.version(1).stores({
         players: "uuid, x, y, z, yaw, pitch, onGround"
     });
+
+    debug('Opened database');
     
     return db;
 }

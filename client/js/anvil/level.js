@@ -1,18 +1,8 @@
 const nbt = require('prismarine-nbt')
 const {promisify} = require("es6-promisify")
 const zlib = require('zlib')
-const BrowserFS = require('browserfs')
-
-let fs;
-
-BrowserFS.configure({
-  fs: "LocalStorage",
-}, function (e) {
-  if (e) {
-    throw e;
-  }
-  fs = BrowserFS.BFSRequire('fs');
-});
+const AnvilFS = require('./fs').default
+const fs = new AnvilFS;
 
 function write (nbtData, cb) {
   const data = nbt.writeUncompressed(nbtData)
@@ -25,7 +15,8 @@ const writeAsync = promisify(write)
 module.exports = {readLevel, writeLevel}
 
 async function readLevel (path) {
-  const content = fs.readFileSync(path)
+  const buffer = fs.readFile(path, fs.stat(path).size, 0)
+  const content = buffer.toString();
   const dnbt = await parseAsync(content)
   return nbt.simplify(dnbt).Data
 }
@@ -47,5 +38,6 @@ async function writeLevel (path, value) {
     }
   }
   const data = await writeAsync(nbt)
-  fs.writeFileSync(path, data)
+  const buffer = Buffer.alloc(data.length, data)
+  fs.writeFile(path, buffer)
 }

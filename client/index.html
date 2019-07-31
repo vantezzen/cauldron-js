@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,14 +13,15 @@
 
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
   <img src="icon.png" alt="Icon">
   <h1>
     Cauldron.js
   </h1>
-  <h3>
+  <h4>
     Minecraft Server in your browser
-  </h3>
+  </h4>
   <div id="start-server">
     <p>Please select your settings and start your server.</p>
 
@@ -41,6 +43,24 @@
       Start server
     </button>
   </div>
+  <div id="server-starting" style="display: none;">
+    <div>
+      <div class="lds-grid">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+      <div class="loading-text">
+        <h3>Starting server...</h3>
+      </div>
+    </div>
+  </div>
   <div id="server-online" style="display: none;">
     <p>Your server is availible at</p>
     <h3 id="ip"></h3>
@@ -51,4 +71,5 @@
 
   <script src="dist/bundle.js"></script>
 </body>
+
 </html>

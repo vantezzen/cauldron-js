@@ -26,6 +26,8 @@ export default class MCServer {
         this.world = new MCWorld(version, this)
         this.command = new MCCommand(this)
         this.clients = [];
+
+        debug('Started MC Server');
     }
 
     // Convert float (degrees) --> byte (1/256 "degrees")
