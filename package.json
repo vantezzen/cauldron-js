@@ -16,6 +16,8 @@
     "fifo": "^2.3.0",
     "filer": "^1.1.2",
     "ip": "^1.1.5",
+    "localforage": "^1.7.3",
+    "minecraft-data": "^2.39.0",
     "minecraft-protocol": "^1.9.3",
     "prismarine-chunk": "^1.11.0",
     "prismarine-nbt": "^1.2.1",

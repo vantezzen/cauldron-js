@@ -1,7 +1,5 @@
 PHASE 1, essentials:
-- Get anvil saving/loading working
 - Show other players
-- Generate world as player moves
 
 PHASE 2, making it playable:
 - Make better world generator

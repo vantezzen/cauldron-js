@@ -272,6 +272,10 @@ img {
     margin-bottom: 2rem;
 }
 
+.stats p {
+    margin: 0;
+}
+
 #server-starting {
     margin-top: 4rem;
 }

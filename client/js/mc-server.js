@@ -18,12 +18,12 @@ import MCCommand from './command'
 const debug = Debugger('cauldron:mc-server');
 
 export default class MCServer {
-    constructor(socket, version, db) {
+    constructor(socket, version, db, generator) {
         this.socket = socket;
         this.Chunk = ChunkLoader(version);
         this.db = db;
         this.event = new MCEvent;
-        this.world = new MCWorld(version, this)
+        this.world = new MCWorld(version, generator, this)
         this.command = new MCCommand(this)
         
         // Array of minecraft clients currently connected

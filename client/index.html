@@ -22,7 +22,7 @@
   <h4>
     Minecraft Server in your browser
   </h4>
-  <div id="start-server">
+  <div id="start-server" style="display:none;">
     <p>Please select your settings and start your server.</p>
 
     <label for="motd">MOTD</label>
@@ -37,6 +37,14 @@
       <option value="1.12">1.12</option>
       <option value="1.13">1.13</option>
       <option value="1.14" disabled>1.14 (not yet supported)</option>
+    </select>
+
+    <label for="generator">World generator</label>
+    <select id="generator" class="mb">
+      <option value="grass">grass</option>
+      <option value="nether">nether</option>
+      <option value="all_the_blocks">all_the_blocks</option>
+      <option value="superflat">superflat</option>
     </select>
 
     <button id="start">
@@ -64,6 +72,11 @@
   <div id="server-online" style="display: none;">
     <p>Your server is availible at</p>
     <h3 id="ip"></h3>
+    <div class="stats">
+      <p>Stats:</p>
+      <p>Chunk generated: <span id="chunks">?</span></p>
+      <p>Storage usage: <span id="storage">?</span></p>
+    </div>
   </div>
   <div id="server-error" style="display: none;">
     <p>We could not start your server. Please only open one server per socket connection.</p>

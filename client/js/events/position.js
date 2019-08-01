@@ -25,8 +25,10 @@ export const handle = (event, data, metadata, id, uuid, server) => {
             const chunkId = `${x}:${z}`;
             if (!server.clientChunks.get(id).has(chunkId)) {
                 server.clientChunks.get(id).add(chunkId)
-                const chunk = server.world.land.getChunk(x, z);
-                server.world.sendChunk(id, x, z, chunk.dump())
+                server.world.land.getChunk(x, z).then(chunk => {
+                    
+                    server.world.sendChunk(id, x, z, chunk.dump())
+                });
             }
         }
     }

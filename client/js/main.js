@@ -14,7 +14,6 @@ import {
   openDatabase
 } from './storage'
 import MCServer from './mc-server'
-// import AnvilFS from './anvil/fs'
 
 // Current MCServer instance
 let server;
@@ -91,16 +90,7 @@ window.dumpFS = () => {
   
 }
 
-// window.fs = new AnvilFS;
-// window.Buffer = Buffer;
-
-// Listen for server start
-document.getElementById('start').addEventListener('click', () => {
-  const version = document.getElementById('version').value;
-  const motd = document.getElementById('motd').value;
-
-  debug('Starting MC Server with data:', version, motd)
-
+const startServer = (version, motd, generator) => {
   document.getElementById('start-server').style.display = 'none';
   document.getElementById('server-starting').style.display = 'block';
 
@@ -116,10 +106,39 @@ document.getElementById('start').addEventListener('click', () => {
     debug('Started MC Server proxy on IP', ip);
 
     // Setup MC Server
-    server = new MCServer(socket, version, db);
+    server = new MCServer(socket, version, db, generator);
 
     document.getElementById('server-online').style.display = 'block';
     document.getElementById('server-starting').style.display = 'none';
     document.getElementById('ip').innerText = ip;
   });
+}
+
+// Test if settings already saved => Start automatically
+if (localStorage.getItem('setting.version')) {
+  const version = localStorage.getItem('setting.version');
+  const motd = localStorage.getItem('setting.motd');
+  const generator = localStorage.getItem('setting.generator');
+
+  debug('Auto-Starting MC Server with data:', version, motd, generator)
+
+  startServer(version, motd, generator);
+} else {
+  document.getElementById('start-server').style.display = 'flex';
+}
+
+// Listen for server start
+document.getElementById('start').addEventListener('click', () => {
+  const version = document.getElementById('version').value;
+  const motd = document.getElementById('motd').value;
+  const generator = document.getElementById('generator').value;
+
+  // Save settings in localStorage
+  localStorage.setItem('setting.version', version)
+  localStorage.setItem('setting.motd', motd)
+  localStorage.setItem('setting.generator', generator)
+
+  debug('Starting MC Server with data:', version, motd, generator)
+  
+  startServer(version, motd, generator);
 });
