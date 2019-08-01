@@ -32,6 +32,8 @@ export default class MCServer {
         // Keep map of what chunks a client has loaded
         this.clientChunks = new Map();
 
+        this.updateServerStats();
+
         debug('Started MC Server');
     }
 
@@ -44,9 +46,15 @@ export default class MCServer {
         return b
     }
 
+    // Update stats about MC Server on page
+    updateServerStats() {
+        document.getElementById('players').innerText = this.clients.length;
+    }
+
     newClient(client) {
         this.clients.push(client);
         this.clientChunks.set(client.id, new Set())
+        this.updateServerStats();
         debug('New client connected with ID of', client.id);
 
         this.write(client.id, 'login', {
@@ -142,6 +150,8 @@ export default class MCServer {
     handleDisconnect(client, reason) {
         this.clients = this.clients.filter(el => el.id !== client);
         this.clientChunks.delete(client)
+
+        this.updateServerStats();
 
         debug('Client disconnected from server');
     }

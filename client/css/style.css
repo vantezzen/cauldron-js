@@ -85,7 +85,8 @@ html {
 }
 
 body {
-    line-height: 1.85
+    line-height: 1.85;
+    margin: 1rem;
 }
 
 .air-p,

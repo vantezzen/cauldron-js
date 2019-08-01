@@ -1,15 +1,28 @@
+/**
+ * Cauldron.js - Minecraft Server in your browser
+ * 
+ * MCWorld - Manage minecraft world and its chunks
+ * 
+ * Based on nodecraft's land system (https://github.com/YaroslavGaponov/nodecraft/blob/628a256935/src/land/index.js)
+ * and flying-squid's world system (https://github.com/PrismarineJS/flying-squid/blob/master/src/lib/plugins/world.js)
+ * 
+ * @version     0.1.0
+ * @copyright   Copyright vantezzen (https://github.com/vantezzen)
+ * @link        https://github.com/vantezzen/cauldron-js
+ * @license     https://opensource.org/licenses/mit-license.php MIT License
+ */
 import events from 'events'
 import ChunkLoader from 'prismarine-chunk'
 import Vec3 from 'vec3'
-import generators from './land/generators'
+import generators from './generators'
 import localForage from 'localforage'
 
-import Land from './land'
 import Debugger from 'debug'
 const debug = Debugger('cauldron:mc-world')
 
 const EventEmitter = events.EventEmitter
 
+// Format bytes to human-readable size (Source: https://stackoverflow.com/a/18650828/10590162)
 function formatBytes(bytes, decimals = 2) {
     if (bytes === 0) return '0 Bytes';
 
@@ -28,11 +41,12 @@ export default class MCWorld extends EventEmitter {
         
         this.server = server;
 
-        this._map = new Map();
-        this.version = version;
-        this.generator = generators[generator](this.version)
-        this.Chunk = ChunkLoader(version)
+        this._map = new Map(); // Saving a map of current chunks
+        this.version = version; // Current minecraft version
+        this.generator = generators[generator](this.version) // Generator to use
+        this.Chunk = ChunkLoader(version) // Chunk version to use
 
+        // Initialise localForage for storing minecraft world
         localForage.config({
             name        : 'world',
             version     : 1.0,
@@ -40,14 +54,16 @@ export default class MCWorld extends EventEmitter {
             description : 'Cauldron.JS Minecraft World'
         });
 
+        // Save world every 10 seconds
         this.save = this.save.bind(this)
-
-        // Save every 10 seconds
         setInterval(this.save, 10 * 1000)
+
+        this.updateWorldStats();
 
         debug('Constructed new MCWorld');
     }
 
+    // Update stats about world on page
     updateWorldStats() {
         document.getElementById('chunks').innerText = this._map.size;
         if (navigator.storage && navigator.storage.estimate) {
@@ -61,6 +77,7 @@ export default class MCWorld extends EventEmitter {
         }
     }
 
+    // Save world to localForage
     save() {
         debug('Saving ' + this._map.size + ' chunks');
         this._map.forEach((chunk, id) => {
@@ -81,6 +98,7 @@ export default class MCWorld extends EventEmitter {
         this._initializer = fn;
     }
 
+    // Get prismarine-chunk object for a chunk
     async getChunk(chunkX, chunkZ) {
         return new Promise(async resolve => {
             const chunkID = `${chunkX}:${chunkZ}`;
