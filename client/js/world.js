@@ -1,15 +1,12 @@
 import spiralloop from 'spiralloop'
 
-import World from './anvil'
-// import World from './world/index'
-// import generator from './world/generators/grass'
+import Land from './land'
 import Debugger from 'debug'
 const debug = Debugger('cauldron:mc-world')
 
 export default class MCWorld {
     constructor(version, server) {
-        this.world = new World(version);
-        // this.world = new(World(version))(generator(version), '/overworld');
+        this.land = new Land(version);
         this.server = server;
 
         debug('Constructed new MCWorld');

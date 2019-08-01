@@ -1,19 +1,42 @@
-// import Chunk from './chunk'
-import Block from './block'
 import events from 'events'
 import ChunkLoader from 'prismarine-chunk'
 import Vec3 from 'vec3'
-import Generator from '../world/generators/grass'
+import Generator from './generators/grass'
+import Debugger from 'debug'
+
+const debug = Debugger('cauldron:land');
 
 const EventEmitter = events.EventEmitter
 
-export default class World extends EventEmitter {
+export default class Land extends EventEmitter {
     constructor(version) {
         super();
         this._map = new Map();
         this.version = version;
         this.generator = Generator(this.version)
         this.Chunk = ChunkLoader(version)
+
+        this.save = this.save.bind(this)
+
+        debug('Constructed new land');
+
+        // Save every 10 seconds
+        setInterval(this.save, 10 * 1000)
+    }
+
+    save() {
+        debug('Saving ' + this._map.size + ' chunks');
+        this._map.forEach((chunk, id) => {
+            const dump = chunk.dump();
+
+            // Convert dump to string
+            let data = ''; 
+            dump.forEach(function(byte) {
+                data += String.fromCharCode(byte)
+            });
+
+            localStorage.setItem('CHUNK-' + id, data);
+        })
     }
 
     forEachChunk(fn) {
@@ -24,7 +47,25 @@ export default class World extends EventEmitter {
     getChunk(chunkX, chunkZ) {
         const chunkID = `${chunkX}:${chunkZ}`;
         if (!this._map.has(chunkID)) {
-            const chunk = this.generator();
+            let chunk;
+            if (localStorage.getItem('CHUNK-' + chunkID)) {
+                // Load data from localStorage
+                chunk = new this.Chunk();
+
+                const data = localStorage.getItem('CHUNK-' + chunkID);
+                let dump = new Uint8Array(data.length);
+                for (let i = 0, strLen = data.length; i < strLen; i++) {
+                    dump[i] = data.charCodeAt(i);
+                }
+
+                console.log('Loading chunk from localStorage', dump);
+
+                chunk.load(Buffer.from(dump));
+            } else {
+                // Generate new chunk
+                console.log('Generating new chunk');
+                chunk = this.generator();
+            }
             this._map.set(chunkID, chunk);
         }
         return this._map.get(chunkID);

@@ -112,8 +112,6 @@ const parseClassic = (message) => {
 }
 
 export const handle = (event, data, metadata, id, uuid, server) => {
-    console.log('CHAT', data);
-
     if (data.message.substr(0,1) === '/') {
         server.handleCommand(data.message.substr(1), id, uuid);
     } else {
