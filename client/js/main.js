@@ -14,7 +14,7 @@ import {
   openDatabase
 } from './storage'
 import MCServer from './mc-server'
-import AnvilFS from './anvil/fs'
+// import AnvilFS from './anvil/fs'
 
 // Current MCServer instance
 let server;
@@ -46,6 +46,11 @@ socket.on('login', client => {
 // Listen for minecraft client events
 socket.on('event', (event, data, metadata, id, uuid) => {
   server.handleEvent(event, data, metadata, id, uuid)
+})
+
+// Listen for minecraft connection end
+socket.on('client disconnected', (client, reason) => {
+  server.handleDisconnect(client, reason);
 })
 
 // Helper function: Dump Dexie database to console
@@ -86,8 +91,8 @@ window.dumpFS = () => {
   
 }
 
-window.fs = new AnvilFS;
-window.Buffer = Buffer;
+// window.fs = new AnvilFS;
+// window.Buffer = Buffer;
 
 // Listen for server start
 document.getElementById('start').addEventListener('click', () => {

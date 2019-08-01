@@ -78,6 +78,9 @@ io.on('connection', socket => {
           socket.emit('event', metadata.name, data, metadata, client.id, client.uuid);
         }
       })
+      client.on('end', reason => {
+        socket.emit('client disconnected', client.id, reason);
+      })
       socket.emit('login', client);
     });
     debug('Started new MC proxy server on port ' + port);

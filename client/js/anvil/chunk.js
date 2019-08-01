@@ -1,198 +1,96 @@
-const nbt = require('prismarine-nbt')
+import Block from './block'
+import Biome from './biome'
 
-let Chunk
-
-const Vec3 = require('vec3').Vec3
-const { readUInt4LE, writeUInt4LE } = require('uint4')
-
-function nbtChunkToPrismarineChunk (data) {
-  let nbtd = nbt.simplify(data)
-  const chunk = new Chunk()
-  readSections(chunk, nbtd.Level.Sections)
-  readBiomes(chunk, nbtd.Level.Biomes)
-  return chunk
+const BlockTypeName = [];
+for (let name in Block) {
+    BlockTypeName[Block[name]] = name;
 }
 
-function prismarineChunkToNbt (chunk) {
-  return {
-    'name': '',
-    'type': 'compound',
-    'value': {
-      'Level': {
-        'type': 'compound',
-        'value': {
-          Biomes: writeBiomes(chunk),
-          Sections: writeSections(chunk)
+export default class Chunk {
+    constructor() {
+        this._block = Buffer.alloc(16 * 256 * 16, 0);
+        this._addition = Buffer.alloc(16 * 128 * 16, 0);        
+        this._lightBlock = Buffer.alloc(16 * 128 * 16, 0);
+        this._lightSky = Buffer.alloc(16 * 128 * 16, 0);
+        this._meta = Buffer.alloc(16 * 128 * 16, 0);
+        this._bioms = Buffer.alloc(16 * 16, 0);
+    }
+
+    setType(x, y, z, value) {
+        value = isNaN(value) ? Block[value] : +value;
+        this._block.writeUInt8(value, x | (z << 4) | (y << 8));
+    }
+
+    getType(x, y, z) {
+        const value = this._block.readUInt8(x | (z << 4) | (y << 8));
+        return BlockTypeName[value] || value;
+    }
+
+    setAddition(x, y, z, value) {
+        const index = x | (z << 4) | (y << 8);
+
+        if (index % 2) {            
+            this._addition[index>>>1] &= 0xf0;
+            this._addition[index>>>1] |= (value & 0x0f);
+        } else {
+            this._addition[index>>>1] &= 0x0f;
+            this._addition[index>>>1] |= ((value << 4) & 0xf0);
         }
-      }
     }
-  }
-}
 
-function readSections (chunk, sections) {
-  sections.forEach(section => readSection(chunk, section))
-}
+    setLightBlock(x, y, z, value) {
+        const index = (x | (z << 4) | (y << 8)) >>> 1;
 
-function writeSections (chunk) {
-  const sections = []
-  for (let sectionY = 0; sectionY < 16; sectionY++) { sections.push(writeSection(chunk, sectionY)) }
-
-  return {
-    'type': 'list',
-    'value': {
-      'type': 'compound',
-      'value': sections
+        if (x % 2) {
+            this._lightBlock[index] &= 0xf0;
+            this._lightBlock[index] |= value & 0x0f;
+        } else {
+            this._lightBlock[index] &= 0x0f;
+            this._lightBlock[index] |= (value << 4) & 0xf0;
+        }
     }
-  }
-}
 
-function readSection (chunk, {Y, Blocks, Add, Data, BlockLight, SkyLight}) {
-  readBlocks(chunk, Y, Blocks)
-  readSkyLight(chunk, Y, SkyLight)
-  readBlockLight(chunk, Y, BlockLight)
-  readData(chunk, Y, Data)
-}
+    getLightBlock(x, y, z) {
+        const index = (x | (z << 4) | (y << 8)) >>> 1;
 
-function writeSection (chunk, sectionY) {
-  return {
-    Y: {
-      type: 'byte',
-      value: sectionY
-    },
-    Blocks: writeBlocks(chunk, sectionY),
-    Data: writeData(chunk, sectionY),
-    BlockLight: writeBlockLight(chunk, sectionY),
-    SkyLight: writeSkyLight(chunk, sectionY)
-  }
-}
-
-function indexToPos (index, sectionY) {
-  const y = index >> 8
-  const z = (index >> 4) & 0xf
-  const x = index & 0xf
-  return new Vec3(x, sectionY * 16 + y, z)
-}
-
-function readBlocks (chunk, sectionY, blocks) {
-  blocks = Buffer.from(blocks)
-  for (let index = 0; index < blocks.length; index++) {
-    const blockType = blocks.readUInt8(index)
-    const pos = indexToPos(index, sectionY)
-    chunk.setBlockType(pos, blockType)
-  }
-}
-
-function toSignedArray (buffer) {
-  let arr = []
-  for (let index = 0; index < buffer.length; index++) { arr.push(buffer.readInt8(index)) }
-  return arr
-}
-
-function writeBlocks (chunk, sectionY) {
-  const buffer = Buffer.alloc(16 * 16 * 16)
-  for (let y = 0; y < 16; y++) {
-    for (let z = 0; z < 16; z++) {
-      for (let x = 0; x < 16; x++) {
-        buffer.writeUInt8(chunk.getBlockType(new Vec3(x, y + sectionY * 16, z)), x + 16 * (z + 16 * y))
-      }
+        if (x % 2) {
+            return this._lightBlock[index] & 0x0f;
+        } else {
+            return (this._lightBlock[index] >> 4) & 0xf0;
+        }
     }
-  }
-  return {
-    'type': 'byteArray',
-    'value': toSignedArray(buffer)
-  }
-}
 
-function readData (chunk, sectionY, metadata) {
-  metadata = Buffer.from(metadata)
-  for (let index = 0; index < metadata.length; index += 0.5) {
-    const meta = readUInt4LE(metadata, index)
-    const pos = indexToPos(index * 2, sectionY)
-    chunk.setBlockData(pos, meta)
-  }
-}
-
-function writeData (chunk, sectionY) {
-  const buffer = Buffer.alloc(16 * 16 * 8)
-  for (let y = 0; y < 16; y++) {
-    for (let z = 0; z < 16; z++) {
-      for (let x = 0; x < 16; x++) { writeUInt4LE(buffer, chunk.getBlockData(new Vec3(x, y + sectionY * 16, z)), (x + 16 * (z + 16 * y)) * 0.5) }
+    setLightSky(x, y, z, value) {
+        const index = (x | (z << 4) | (y << 8)) >>> 1;
+        if (x % 2) {
+            this._lightSky[index] &= 0xf0;
+            this._lightSky[index] |= value & 0x0f;
+        } else {
+            this._lightSky[index] &= 0x0f;
+            this._lightSky[index] |= (value << 4) & 0xf0;
+        }
     }
-  }
-  return {
-    'type': 'byteArray',
-    'value': toSignedArray(buffer)
-  }
-}
 
-function readBlockLight (chunk, sectionY, blockLights) {
-  blockLights = Buffer.from(blockLights)
-  for (let index = 0; index < blockLights.length; index += 0.5) {
-    const blockLight = readUInt4LE(blockLights, index)
-    const pos = indexToPos(index * 2, sectionY)
-    chunk.setBlockLight(pos, blockLight)
-  }
-}
+    getLightSky(x, y, z) {
+        const index = (x | (z << 4) | (y << 8)) >>> 1;
 
-function writeBlockLight (chunk, sectionY) {
-  const buffer = Buffer.alloc(16 * 16 * 8)
-  for (let y = 0; y < 16; y++) {
-    for (let z = 0; z < 16; z++) {
-      for (let x = 0; x < 16; x++) { writeUInt4LE(buffer, chunk.getBlockLight(new Vec3(x, y + sectionY * 16, z)), (x + 16 * (z + 16 * y)) * 0.5) }
+        if (x % 2) {
+            return this._lightSky[index] & 0x0f;
+        } else {
+            return (this._lightSkyp[index] >> 4) & 0xf0;
+        }
     }
-  }
-  return {
-    'type': 'byteArray',
-    'value': toSignedArray(buffer)
-  }
-}
 
-function readSkyLight (chunk, sectionY, skylights) {
-  skylights = Buffer.from(skylights)
-  for (let index = 0; index < skylights.length; index += 0.5) {
-    const skylight = readUInt4LE(skylights, index)
-    const pos = indexToPos(index * 2, sectionY)
-    chunk.setSkyLight(pos, skylight)
-  }
-}
-
-function writeSkyLight (chunk, sectionY) {
-  const buffer = Buffer.alloc(16 * 16 * 8)
-  for (let y = 0; y < 16; y++) {
-    for (let z = 0; z < 16; z++) {
-      for (let x = 0; x < 16; x++) { writeUInt4LE(buffer, chunk.getSkyLight(new Vec3(x, y + sectionY * 16, z)), (x + 16 * (z + 16 * y)) * 0.5) }
+    setBiome(x, z, value) {
+        value = isNaN(value) ? Biome[value] : +value;
+        this._bioms.writeUInt8(value, x | (z << 4));
     }
-  }
-  return {
-    'type': 'byteArray',
-    'value': toSignedArray(buffer)
-  }
-}
 
-function readBiomes (chunk, biomes) {
-  biomes = Buffer.from(biomes)
-  for (let index = 0; index < biomes.length; index++) {
-    const biome = biomes.readUInt8(index)
-    const z = index >> 4
-    const x = index & 0xF
-    chunk.setBiome(new Vec3(x, 0, z), biome)
-  }
-}
+    getBiome(x, z) {
+        return this._bioms.readUInt8(x | (z << 4));
+    }
 
-function writeBiomes (chunk) {
-  const biomes = []
-  for (let z = 0; z < 16; z++) {
-    for (let x = 0; x < 16; x++) { biomes.push(chunk.getBiome(new Vec3(x, 0, z))) }
-  }
-  return {
-    'value': biomes,
-    'type': 'byteArray'
-  }
+    raw() {
+        
+    }
 }
-
-function loader (mcVersion) {
-  Chunk = require('prismarine-chunk')(mcVersion)
-  return {nbtChunkToPrismarineChunk, prismarineChunkToNbt}
-}
-
-module.exports = loader

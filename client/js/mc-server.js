@@ -25,7 +25,12 @@ export default class MCServer {
         this.event = new MCEvent;
         this.world = new MCWorld(version, this)
         this.command = new MCCommand(this)
+        
+        // Array of minecraft clients currently connected
         this.clients = [];
+        
+        // Keep map of what chunks a client has loaded
+        this.clientChunks = new Map();
 
         debug('Started MC Server');
     }
@@ -41,6 +46,7 @@ export default class MCServer {
 
     newClient(client) {
         this.clients.push(client);
+        this.clientChunks.set(client.id, new Set())
         debug('New client connected with ID of', client.id);
 
         this.write(client.id, 'login', {
@@ -108,45 +114,6 @@ export default class MCServer {
             position: 0
         });
 
-        debug('Generating sample chunk');
-        this.world.sendNearbyChunks(client);
-        
-        // const chunk = new (this.Chunk)()
-        // for (let x = 0; x < 16; x++) {
-        //     for (let z = 0; z < 16; z++) {
-        //         chunk.setBlockType(new Vec3(x, 50, z), 2)
-        //         for (let y = 0; y < 256; y++) {
-        //             chunk.setSkyLight(new Vec3(x, y, z), 15)
-        //         }
-        //     }
-        // }
-
-        // debug('Sending sample chunks to client');
-        // this.write(client.id, 'map_chunk', {
-        //     x: 0,
-        //     z: 0,
-        //     groundUp: true,
-        //     bitMap: 0xffff,
-        //     chunkData: chunk.dump(),
-        //     blockEntities: []
-        // })
-        // this.write(client.id, 'map_chunk', {
-        //     x: 1,
-        //     z: 1,
-        //     groundUp: true,
-        //     bitMap: 0xffff,
-        //     chunkData: chunk.dump(),
-        //     blockEntities: []
-        // })
-        // this.write(client.id, 'map_chunk', {
-        //     x: 1,
-        //     z: 0,
-        //     groundUp: true,
-        //     bitMap: 0xffff,
-        //     chunkData: chunk.dump(),
-        //     blockEntities: []
-        // })
-
         // Spawn other players
         for (const player of this.clients) {
             if (player.id !== client.id) {
@@ -169,6 +136,14 @@ export default class MCServer {
                 
             }
         }
+    }
+
+    // Handle client disconnecting from server
+    handleDisconnect(client, reason) {
+        this.clients = this.clients.filter(el => el.id !== client);
+        this.clientChunks.delete(client)
+
+        debug('Client disconnected from server');
     }
 
     // Handle event from minecraft client

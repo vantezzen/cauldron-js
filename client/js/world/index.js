@@ -3,7 +3,7 @@ let Anvil
 const fifo = require('fifo')
 const EventEmitter = require('events').EventEmitter
 const once = require('event-promise')
-const AnvilSave = require('../anvil').Anvil;
+const AnvilSave = require('../anvil_').Anvil;
 const debug = require('debug')('cauldron:world')
 
 function columnKeyXZ(chunkX, chunkZ) {

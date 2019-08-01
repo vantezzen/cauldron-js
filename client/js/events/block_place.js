@@ -16,5 +16,9 @@ export const handle = (event, data, metadata, id, uuid, server) => {
         type: data.heldItem.blockId << 4 | data.heldItem.itemDamage,
     })
 
-    server.world.world.setBlock(placedPosition, data.heldItem.blockId << 4 | data.heldItem.itemDamage)
+    server.world.world.setBlock(placedPosition.x, placedPosition.y, placedPosition.z, {
+        type: data.heldItem.blockId,
+        metadata: data.heldItem.itemDamage
+    })
+    // data.heldItem.blockId << 4 | data.heldItem.itemDamage
 }

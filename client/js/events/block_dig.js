@@ -4,5 +4,7 @@ export const handle = (event, data, metadata, id, uuid, server) => {
         location: data.location,
         type: 0
     })
-    server.world.world.setBlock(data.location, 0)
+    server.world.world.setBlock(data.location.x, data.location.y, data.location.z, {
+        type: 0
+    })
 }
