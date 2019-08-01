@@ -34,6 +34,8 @@ export default class MCServer {
 
         this.updateServerStats();
 
+        this.checkPerformance();
+
         debug('Started MC Server');
     }
 
@@ -51,12 +53,37 @@ export default class MCServer {
         document.getElementById('players').innerText = this.clients.length;
     }
 
+    // Check JavaScript performance to guesstimate CPU load
+    checkPerformance() {
+        let last = new Date().getTime();
+        let intervalsSince = 0;
+
+        setInterval(() => {
+            if (intervalsSince > 50) {
+                intervalsSince = 0;
+                let now = new Date().getTime();
+                let load = (now - last) * 10;
+
+                if (load > 100) {
+                    load = '>100';
+                }
+
+                document.getElementById('cpu').innerText = load + '%';
+            }
+            
+            last = new Date().getTime();
+            intervalsSince++;
+        }, 0);
+    }
+
+    // Handle new client connecting to server
     newClient(client) {
         this.clients.push(client);
         this.clientChunks.set(client.id, new Set())
         this.updateServerStats();
         debug('New client connected with ID of', client.id);
 
+        // Write login package
         this.write(client.id, 'login', {
             entityId: client.id,
             levelType: 'default',
@@ -68,7 +95,17 @@ export default class MCServer {
         })
         debug('Written login package to new client');
 
-        // Get player position
+        // Fill tab lists
+        this.writeAll('player_info', {
+            action: 0,
+            data: this.clients.map((otherPlayer) => ({
+                UUID: otherPlayer.uuid,
+                name: otherPlayer.username,
+                properties: [],
+            }))        
+        })
+
+        // Get player position from database
         this.db.players.get(client.uuid)
             .then(data => {
                 if (!data) {
@@ -94,18 +131,27 @@ export default class MCServer {
                     pitch: data.pitch || 0,
                     flags: 0x00
                 })
-                this.writeOthers(client.id, 'named_entity_spawn', {
+
+                // Teleport player to new position
+                server.writeOthers(client.id, 'entity_teleport', {
                     entityId: client.id,
-                    playerUUID: client.uuid,
-                    type: 'player',
-                    x: data.x || 15,
-                    y: data.y || 101,
-                    z: data.z || 15,
-                    yaw: this.conv(data.yaw) || 0,
-                    pitch: this.conv(data.pitch) || 0,
-                    currentItem: 0,
-                    metadata: []
-                })        
+                    x: data.x,
+                    y: data.y,
+                    z: data.z,
+                    onGround: data.onGround
+                })
+                // this.writeOthers(client.id, 'named_entity_spawn', {
+                //     entityId: client.id,
+                //     playerUUID: client.uuid,
+                //     type: 'player',
+                //     x: data.x || 15,
+                //     y: data.y || 101,
+                //     z: data.z || 15,
+                //     yaw: this.conv(data.yaw) || 0,
+                //     pitch: this.conv(data.pitch) || 0,
+                //     currentItem: 0,
+                //     metadata: []
+                // })        
             });
 
 
@@ -123,27 +169,27 @@ export default class MCServer {
         });
 
         // Spawn other players
-        for (const player of this.clients) {
-            if (player.id !== client.id) {
-                this.db.players.get(player.uuid)
-                .then(data => {
-                    debug('Spawning other player to new client');
-                    this.write(client.id, 'named_entity_spawn', {
-                        entityId: player.id,
-                        playerUUID: player.uuid,
-                        type: 'player',
-                        x: data.x,
-                        y: data.y,
-                        z: data.z,
-                        yaw: this.conv(data.yaw),
-                        pitch: this.conv(data.pitch),
-                        currentItem: 0,
-                        metadata: []
-                    })
-                });
+        // for (const player of this.clients) {
+        //     if (player.id !== client.id) {
+        //         this.db.players.get(player.uuid)
+        //         .then(data => {
+        //             debug('Spawning other player to new client');
+        //             this.write(client.id, 'named_entity_spawn', {
+        //                 entityId: player.id,
+        //                 playerUUID: player.uuid,
+        //                 type: 'player',
+        //                 x: data.x,
+        //                 y: data.y,
+        //                 z: data.z,
+        //                 yaw: this.conv(data.yaw),
+        //                 pitch: this.conv(data.pitch),
+        //                 currentItem: 0,
+        //                 metadata: []
+        //             })
+        //         });
                 
-            }
-        }
+        //     }
+        // }
     }
 
     // Handle client disconnecting from server

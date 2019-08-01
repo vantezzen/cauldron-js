@@ -16,11 +16,11 @@ By moving all processing and memory intensive work to the browser, `Cauldron.js`
 
     This is why `Cauldron.js` is still very bare-bones, having only a few elemental features and serving as a proof-of-concept.
 
-2. Moving all processes into the browser also slows down the server ping.
+2. Moving all processes into the browser also slows down all actions (a lot!).
 
-    This results in actions sometimes needing up to one second to get to the other clients.
+    This results in actions sometimes needing up to a few seconds to get to the other clients, depending on the load.
 
-3. `Cauldron.js` saves all game data (worlds etc.) inside the browser. This limits the storage availible to only 10-50MB (depending on the current browser), making it impossible to save larger maps.
+3. `Cauldron.js` saves all game data (worlds etc.) inside IndexedDB. This limits the storage availible to 5MB on most mobile devices and up to 20GB on desktops with large hard drives. This results in the size of the map being limited too.
 
 ## Usage
 Try a demo of `Cauldron.js` on <...> or [install it on your own server](#Installation).

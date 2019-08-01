@@ -18,13 +18,16 @@ import MCServer from './mc-server'
 // Current MCServer instance
 let server;
 
-// Create debugger for server
-const debug = Debugger('cauldron:main');
-
 // Set default debugging level
 if (!localStorage.debug) {
-  localStorage.debug = 'cauldron:*'
+  localStorage.setItem('debug', 'cauldron:*')
+  Debugger.enable('cauldron:*')
 }
+
+// Create debugger for server
+const debug = Debugger('cauldron:main');
+debug('Cauldron.JS - Minecraft Server in your browser.\nSource code availible at https://github.com/vantezen/cauldron-js');
+
 
 // Open database
 const db = openDatabase();
