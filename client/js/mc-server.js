@@ -17,9 +17,10 @@ import MCCommand from './command'
 const debug = Debugger('cauldron:mc-server');
 
 export default class MCServer {
-    constructor(socket, version, db, generator) {
+    constructor(socket, version, db, generator, seed) {
         this.socket = socket; // Current socket connection to backend
         this.db = db; // Dexie database instance
+        this.seed = seed;
         this.event = new MCEvent; // Event handler for minecraft client events
         this.world = new MCWorld(version, generator, this) // Overworld
         this.command = new MCCommand(this) // Handler for minecraft commands

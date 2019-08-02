@@ -70,7 +70,7 @@ window.dumpDB = async () => {
 };
 
 // Start server using given settings
-const startServer = (version, motd, generator) => {
+const startServer = (version, motd, generator, seed) => {
   document.getElementById('start-server').style.display = 'none';
   document.getElementById('server-starting').style.display = 'block';
 
@@ -87,7 +87,7 @@ const startServer = (version, motd, generator) => {
     debug('Started MC Server proxy on IP', ip);
 
     // Setup MC Server
-    server = new MCServer(socket, version, db, generator);
+    server = new MCServer(socket, version, db, generator, seed);
 
     // Show server online page with IP
     document.getElementById('server-online').style.display = 'block';
@@ -101,10 +101,11 @@ if (localStorage.getItem('setting.version')) {
   const version = localStorage.getItem('setting.version');
   const motd = localStorage.getItem('setting.motd');
   const generator = localStorage.getItem('setting.generator');
+  const seed = localStorage.getItem('setting.seed');
 
-  debug('Auto-Starting MC Server with data:', version, motd, generator)
+  debug('Auto-Starting MC Server with data:', version, motd, generator, seed)
 
-  startServer(version, motd, generator);
+  startServer(version, motd, generator, seed);
 } else {
   document.getElementById('start-server').style.display = 'flex';
 }
@@ -114,13 +115,15 @@ document.getElementById('start').addEventListener('click', () => {
   const version = document.getElementById('version').value;
   const motd = document.getElementById('motd').value;
   const generator = document.getElementById('generator').value;
+  const seed = document.getElementById('seed').value || String(Math.random());
 
   // Save settings in localStorage
   localStorage.setItem('setting.version', version)
   localStorage.setItem('setting.motd', motd)
   localStorage.setItem('setting.generator', generator)
+  localStorage.setItem('setting.seed', seed)
 
-  debug('Starting MC Server with data:', version, motd, generator)
+  debug('Starting MC Server with data:', version, motd, generator, seed)
   
-  startServer(version, motd, generator);
+  startServer(version, motd, generator, seed);
 });

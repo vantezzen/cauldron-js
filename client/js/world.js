@@ -44,7 +44,8 @@ export default class MCWorld extends EventEmitter {
         this._map = new Map(); // Saving a map of current chunks
         this.version = version; // Current minecraft version
         this.generator = generators[generator]({
-            version
+            version,
+            seed: server.seed
         }) // Generator to use
         this.Chunk = ChunkLoader(version) // Chunk version to use
 
@@ -83,7 +84,7 @@ export default class MCWorld extends EventEmitter {
     save() {
         debug('Saving ' + this._map.size + ' chunks');
         this._map.forEach((chunk, id) => {
-            const dump = chunk.dump();
+            const dump = chunk.dump(0xFFFF, false);
 
             // Convert dump to string
             let data = ''; 
@@ -116,7 +117,7 @@ export default class MCWorld extends EventEmitter {
                         dump[i] = data.charCodeAt(i);
                     }
     
-                    chunk.load(Buffer.from(dump));
+                    chunk.load(Buffer.from(dump), 0xFFFF, false);
                 } else {
                     // Generate new chunk
                     chunk = this.generator(chunkX, chunkZ);
