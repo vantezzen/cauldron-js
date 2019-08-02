@@ -1,7 +1,7 @@
 import Vec3 from 'vec3'
 import ChunkGen from 'prismarine-chunk'
 
-export default function generation (version) {
+export default function generation ({version}) {
   const Chunk = ChunkGen(version)
 
   function generateChunk () {

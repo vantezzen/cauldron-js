@@ -68,35 +68,13 @@ window.dumpDB = async () => {
     });
   });
 };
-// Helper function: Dump file names in filesystem
-window.dumpFS = () => {
-  const BrowserFS = require('browserfs')
-  BrowserFS.configure({
-      fs: "LocalStorage"
-  }, ((e) => {
-  if (e) {
-      console.error('BrowserFS error:', e);
-      return;
-  }
-      const fs = BrowserFS.BFSRequire('fs');
-      const stats = fs.statSync('/', false)
-      console.log(stats);
 
-      const files = fs.readdirSync('/overworld', false)
-      console.log(files);
-
-      for (const file of files) {
-        const content = fs.readFileSync('/overworld/' + file);
-        console.log(file, ':', content);
-      }
-  }));
-  
-}
-
+// Start server using given settings
 const startServer = (version, motd, generator) => {
   document.getElementById('start-server').style.display = 'none';
   document.getElementById('server-starting').style.display = 'block';
 
+  // Tell backend to start new proxy server
   socket.emit('create server', version, motd, (ip) => {
     if (ip === 0) {
       debug('Error while starting server: Got response', ip);
@@ -111,6 +89,7 @@ const startServer = (version, motd, generator) => {
     // Setup MC Server
     server = new MCServer(socket, version, db, generator);
 
+    // Show server online page with IP
     document.getElementById('server-online').style.display = 'block';
     document.getElementById('server-starting').style.display = 'none';
     document.getElementById('ip').innerText = ip;
@@ -130,7 +109,7 @@ if (localStorage.getItem('setting.version')) {
   document.getElementById('start-server').style.display = 'flex';
 }
 
-// Listen for server start
+// Listen for click on start server button
 document.getElementById('start').addEventListener('click', () => {
   const version = document.getElementById('version').value;
   const motd = document.getElementById('motd').value;

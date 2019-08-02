@@ -43,7 +43,9 @@ export default class MCWorld extends EventEmitter {
 
         this._map = new Map(); // Saving a map of current chunks
         this.version = version; // Current minecraft version
-        this.generator = generators[generator](this.version) // Generator to use
+        this.generator = generators[generator]({
+            version
+        }) // Generator to use
         this.Chunk = ChunkLoader(version) // Chunk version to use
 
         // Initialise localForage for storing minecraft world
@@ -117,7 +119,7 @@ export default class MCWorld extends EventEmitter {
                     chunk.load(Buffer.from(dump));
                 } else {
                     // Generate new chunk
-                    chunk = this.generator();
+                    chunk = this.generator(chunkX, chunkZ);
                 }
                 this._map.set(chunkID, chunk);
             }

@@ -12,10 +12,12 @@ import all_the_blocks from './all_the_blocks'
 import grass from './grass'
 import nether from './nether'
 import superflat from './superflat'
+import minecraft from './minecraft'
 
 export default {
     all_the_blocks,
     grass,
     nether,
-    superflat
+    superflat,
+    minecraft
 }

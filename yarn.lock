@@ -3397,6 +3397,13 @@ tty-browserify@0.0.0:
   resolved "https://registry.yarnpkg.com/tty-browserify/-/tty-browserify-0.0.0.tgz#a157ba402da24e9bf957f9aa69d524eed42901a6"
   integrity sha1-oVe6QC2iTpv5V/mqadUk7tQpAaY=
 
+tumult@^3.0.14:
+  version "3.0.14"
+  resolved "https://registry.yarnpkg.com/tumult/-/tumult-3.0.14.tgz#eda74983220e7d69fb2c243acdace4c67d436778"
+  integrity sha512-yjr0vcpBplZeVhbJgJbfkmODna+WA9eKUmXUuZ8uoVAPWyqSXkHSLjmvPS49X5U1/RIzuNiWAz3SJGrpCERKHA==
+  dependencies:
+    random-seed "^0.3.0"
+
 type-is@~1.6.17, type-is@~1.6.18:
   version "1.6.18"
   resolved "https://registry.yarnpkg.com/type-is/-/type-is-1.6.18.tgz#4e552cd05df09467dcbc4ef739de89f2cf37c131"

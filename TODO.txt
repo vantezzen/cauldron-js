@@ -5,6 +5,7 @@ PHASE 2, making it playable:
 - Make better world generator
 - Implement inventory storage
 - Implement survival (decrement item counter etc.)
+- Implement crafting
 - Implement chests
 - Implement mobs
 

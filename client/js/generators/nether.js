@@ -4,7 +4,7 @@ import rand from 'random-seed'
 
 const seed = 'A';
 
-export default function generation (version) {
+export default function generation ({version}) {
   const Chunk = ChunkGen(version)
 
   function generateChunk (chunkX, chunkZ) {

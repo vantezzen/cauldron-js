@@ -9,7 +9,6 @@
  * @license     https://opensource.org/licenses/mit-license.php MIT License
  */
 import Debugger from 'debug'
-import ChunkLoader from 'prismarine-chunk'
 import MCEvent from './event'
 import MCWorld from './world'
 import MCCommand from './command'
@@ -19,12 +18,11 @@ const debug = Debugger('cauldron:mc-server');
 
 export default class MCServer {
     constructor(socket, version, db, generator) {
-        this.socket = socket;
-        this.Chunk = ChunkLoader(version);
-        this.db = db;
-        this.event = new MCEvent;
-        this.world = new MCWorld(version, generator, this)
-        this.command = new MCCommand(this)
+        this.socket = socket; // Current socket connection to backend
+        this.db = db; // Dexie database instance
+        this.event = new MCEvent; // Event handler for minecraft client events
+        this.world = new MCWorld(version, generator, this) // Overworld
+        this.command = new MCCommand(this) // Handler for minecraft commands
         
         // Array of minecraft clients currently connected
         this.clients = [];
@@ -32,14 +30,19 @@ export default class MCServer {
         // Keep map of what chunks a client has loaded
         this.clientChunks = new Map();
 
+        // Keep client settings
+        this.clientSettings = {};
+
+        // Show current stats
         this.updateServerStats();
 
+        // Start interval to check performance
         this.checkPerformance();
 
         debug('Started MC Server');
     }
 
-    // Convert float (degrees) --> byte (1/256 "degrees")
+    // Convert float (degrees) --> byte (1/256 "degrees"), needed for head rotation
     // Source: https://github.com/PrismarineJS/flying-squid/blob/43b665bb84afc44f58758671d5a1e8bc75809cbe/src/lib/plugins/updatePositions.js
     conv(f) {
         let b = Math.floor((f % 360) * 256 / 360)
@@ -54,6 +57,10 @@ export default class MCServer {
     }
 
     // Check JavaScript performance to guesstimate CPU load
+    // Check time it takes for the browser between executing a 0ms interval
+    // This should give us a very rough estimation but is only really useful
+    // to check if the CPU load is very high.
+    // This results in the CPU load percentage shown not really being too meaningful
     checkPerformance() {
         let last = new Date().getTime();
         let intervalsSince = 0;
@@ -62,7 +69,8 @@ export default class MCServer {
             if (intervalsSince > 50) {
                 intervalsSince = 0;
                 let now = new Date().getTime();
-                let load = (now - last) * 10;
+                let load = Math.round(((now - last) / 50) * 10);
+                last = new Date().getTime();
 
                 if (load > 100) {
                     load = '>100';
@@ -71,7 +79,6 @@ export default class MCServer {
                 document.getElementById('cpu').innerText = load + '%';
             }
             
-            last = new Date().getTime();
             intervalsSince++;
         }, 0);
     }
@@ -95,7 +102,7 @@ export default class MCServer {
         })
         debug('Written login package to new client');
 
-        // Fill tab lists
+        // Update tab lists for all players
         this.writeAll('player_info', {
             action: 0,
             data: this.clients.map((otherPlayer) => ({
@@ -109,6 +116,7 @@ export default class MCServer {
         this.db.players.get(client.uuid)
             .then(data => {
                 if (!data) {
+                    // Player not yet in db, add new
                     debug('Adding new player to database');
 
                     this.db.players.add({
@@ -133,7 +141,7 @@ export default class MCServer {
                 })
 
                 // Teleport player to new position
-                server.writeOthers(client.id, 'entity_teleport', {
+                this.writeOthers(client.id, 'entity_teleport', {
                     entityId: client.id,
                     x: data.x,
                     y: data.y,
@@ -155,7 +163,8 @@ export default class MCServer {
             });
 
 
-        debug('Writing welcome message package to new client');
+        // Show welcome message to all users
+        debug('Writing welcome message package for new client');
         const msg = {
             translate: 'chat.type.announcement',
             "with": [

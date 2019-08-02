@@ -53,7 +53,10 @@ export const handle = (event, data, metadata, id, uuid, server) => {
     // Send current chunk to player
     const chunkX = data.x >> 4;
     const chunkZ = data.z >> 4;
-    const distance = 2;
+    // Chunk radius to send to client, based on view distance but max. 3
+    const distance = server.clientSettings[id] 
+                     && server.clientSettings[id].viewDistance 
+                     && server.clientSettings[id].viewDistance < 3 ? server.clientSettings[id].viewDistance : 3;
     for (let x = chunkX - distance; x < chunkX + distance; x++) {
         for (let z = chunkZ - distance; z < chunkZ + distance; z++) {
             const chunkId = `${x}:${z}`;

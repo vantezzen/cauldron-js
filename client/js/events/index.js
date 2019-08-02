@@ -14,6 +14,7 @@ import * as position from './position'
 import * as blockDig from './block_dig'
 import * as blockPlace from './block_place'
 import * as chat from './chat'
+import * as settings from './settings'
 
 export default [
     look,
@@ -22,4 +23,5 @@ export default [
     blockDig,
     blockPlace,
     chat,
+    settings,
 ]
