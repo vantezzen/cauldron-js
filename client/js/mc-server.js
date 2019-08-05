@@ -260,7 +260,7 @@ export default class MCServer {
     }
 
     // Handle event from minecraft client
-    handleEvent(event, data, metadata, id, uuid) {
+    handleEvent(event, data, metadata, id) {
         const client = this.clients.findIndex(el => el.id === id);
         this.event.handle(event, data, metadata, this.clients[client], client, this);
     }
@@ -304,5 +304,10 @@ export default class MCServer {
     // Write a package to one player
     write(clientId, type, data) {
         this.socket.emit('write', clientId, type, data)
+    }
+
+    // Stop the server
+    stop() {
+        this.socket.emit('stop');
     }
 }

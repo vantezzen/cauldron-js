@@ -65,6 +65,9 @@ When developing `Cauldron.js` you might want to change its debug behaviour. `Cau
 
 All of `Cauldron.js`'s modules will debug into the `cauldron:*` channel.
 
+## Why no 1.14 support?
+`Cauldron.js` uses the `prismarine-chunk` library to create, save, dump and load chunks for the current world. Unfortunately, `prismarine-chunk` is not yet compatible with Minecraft 1.14.
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 

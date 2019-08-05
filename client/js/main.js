@@ -47,7 +47,7 @@ socket.on('login', client => {
 
 // Listen for minecraft client events
 socket.on('event', (event, data, metadata, id, uuid) => {
-  server.handleEvent(event, data, metadata, id, uuid)
+  server.handleEvent(event, data, metadata, id)
 })
 
 // Listen for minecraft connection end
@@ -86,6 +86,11 @@ const startServer = (version, motd, generator, seed) => {
     }
     debug('Started MC Server proxy on IP', ip);
 
+    // Get major version number
+    if (version.split('.').length === 3) {
+      version = version.split('.').slice(0,2).join('.')
+    }
+
     // Setup MC Server
     server = new MCServer(socket, version, db, generator, seed);
 
@@ -107,7 +112,7 @@ if (localStorage.getItem('setting.version')) {
 
   startServer(version, motd, generator, seed);
 } else {
-  document.getElementById('start-server').style.display = 'flex';
+  document.getElementById('start-server').style.display = 'block';
 }
 
 // Listen for click on start server button
@@ -127,3 +132,34 @@ document.getElementById('start').addEventListener('click', () => {
   
   startServer(version, motd, generator, seed);
 });
+
+// Listen for click on change settings/stop server button
+document.getElementById('stop').addEventListener('click', () => {
+  server.stop();
+
+  document.getElementById('version').value = localStorage.getItem('setting.version');
+  document.getElementById('motd').value = localStorage.getItem('setting.motd');
+  document.getElementById('generator').value = localStorage.getItem('setting.generator');
+  document.getElementById('seed').value = localStorage.getItem('setting.seed');
+
+  document.getElementById('start-server').style.display = 'block';
+  document.getElementById('with-configured').style.display = 'block';
+  document.getElementById('server-online').style.display = 'none';
+})
+
+// Listen for server delete
+document.getElementById('delete').addEventListener('click', (() => {
+  document.getElementById('start-server').style.display = 'none';
+  document.getElementById('server-delete').style.display = 'block';
+
+  // Delete all data
+  indexedDB.deleteDatabase('world');
+  indexedDB.deleteDatabase('Minecraft');
+  indexedDB.deleteDatabase('__dbnames');
+  localStorage.clear();
+
+  // Wait 2 seconds for deletion to complete
+  setTimeout(() => {
+    location.reload();
+  }, 2000);
+}).bind(window))

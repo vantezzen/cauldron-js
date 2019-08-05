@@ -80,6 +80,7 @@ export default class MCWorld extends EventEmitter {
         }
     }
 
+    // Clean map of loaded chunks to only contain up to 50 chunks
     cleanLoadedChunks() {
         const maxChunks = 50;
 

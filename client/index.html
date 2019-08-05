@@ -54,6 +54,16 @@
     <button id="start">
       Start server
     </button>
+
+    <div id="with-configured" style="display: none;">
+      <p>Changing the world generator won't effect already generated chunks - only new chunks will use the new generator.<br />
+        To use a new generator for the whole world, you have to delete your server data and world using the button below.</p>
+      <p>Changing the version while keeping the world can lead to incompatabilities.</p>
+
+      <button id="delete">
+        Delete server data and world
+      </button>
+    </div>
   </div>
   <div id="server-starting" style="display: none;">
     <div>
@@ -73,9 +83,33 @@
       </div>
     </div>
   </div>
+  <div id="server-delete" style="display: none;">
+    <div>
+      <div class="lds-grid">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+      <div class="loading-text">
+        <h3>Deleting server files...</h3>
+      </div>
+    </div>
+  </div>
   <div id="server-online" style="display: none;">
     <p>Your server is availible at</p>
     <h3 id="ip"></h3>
+
+    <button id="stop">
+      Change settings
+    </button>
+    <p>Changing settings will stop your server</p>
+
     <div class="stats">
       <p>Stats:</p>
       <p>Players connected: <span id="players">?</span></p>

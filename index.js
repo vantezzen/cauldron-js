@@ -35,6 +35,22 @@ let servers = {}; // List of minecraft servers and clients connected
 let nextPort = 25500; // Port used for next server
 let availiblePorts = []; // Ports that are lower than `port` but are availible again
 
+const stopServer = (id, reason) => {
+  // Disconnect all clients and show custom message
+  Object.keys(servers[id].server.clients).forEach(clientId => {
+    const client = servers[id].server.clients[clientId]
+    client.end(reason)
+  })
+
+  // Close server
+  servers[id].server.close();
+
+  // Make port availible for next server
+  availiblePorts.push(servers[id].port);
+  delete servers[id];
+  debug('Server stopped, opening port for new server');
+}
+
 io.on('connection', socket => {
   debug('New socket connection');
 
@@ -99,21 +115,16 @@ io.on('connection', socket => {
     }
   })
 
+  socket.on('stop', () => {
+    if (servers[socket.id]) {
+      stopServer(socket.id, 'You stopped the server. Please restart the server to continue playing.')
+    }
+  })
+
   // Stop proxy server when socket disconnected
   socket.on('disconnect', () => {
     if (servers[socket.id]) {
-      // Disconnect all clients and show custom message
-      Object.keys(servers[socket.id].server.clients).forEach(clientId => {
-        const client = servers[socket.id].server.clients[clientId]
-        client.end('You closed your browser tab - this will stop your Minecraft server. Please reopen the tab to restart your server.')
-      })
-  
-      // Close server
-      servers[socket.id].server.close();
-
-      // Make port availible for next server
-      availiblePorts.push(servers[socket.id].port);
-      debug('Client disconnected, opening port for new server');
+      stopServer(socket.id, 'You closed your browser tab - this will stop your Minecraft server. Please reopen the tab to restart your server.')
     }
   })
 });
