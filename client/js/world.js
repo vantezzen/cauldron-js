@@ -16,6 +16,7 @@ import ChunkLoader from 'prismarine-chunk'
 import Vec3 from 'vec3'
 import generators from './generators'
 import localForage from 'localforage'
+import Spiralloop from 'spiralloop'
 
 import Debugger from 'debug'
 const debug = Debugger('cauldron:mc-world')
@@ -120,17 +121,19 @@ export default class MCWorld extends EventEmitter {
     const chunkZ = z >> 4
     // Chunk radius to send to client
     const distance = 5
-    for (let x = chunkX - distance; x < chunkX + distance; x++) {
-      for (let z = chunkZ - distance; z < chunkZ + distance; z++) {
-        const chunkId = `${x}:${z}`
-        if (!this.server.clientChunks.get(id).has(chunkId)) {
-          this.server.clientChunks.get(id).add(chunkId)
-          this.getChunk(x, z).then(chunk => {
-            this.sendChunk(id, x, z, chunk.dump())
-          })
-        }
+    
+    Spiralloop([distance * 2, distance * 2], (xPos, zPos) => {
+      const x = chunkX - distance + xPos;
+      const z = chunkZ - distance + zPos;
+
+      const chunkId = `${x}:${z}`
+      if (!this.server.clientChunks.get(id).has(chunkId)) {
+        this.server.clientChunks.get(id).add(chunkId)
+        this.getChunk(x, z).then(chunk => {
+          this.sendChunk(id, x, z, chunk.dump())
+        })
       }
-    }
+    })
 
     this.cleanLoadedChunks()
   }
