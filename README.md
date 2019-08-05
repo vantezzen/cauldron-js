@@ -25,7 +25,7 @@ Tl:dr: Don't actually use CauldronJS to play Minecraft with your friends.
 3. `Cauldron.js` saves all game data (worlds etc.) inside IndexedDB. This limits the storage availible to 5MB on most mobile devices and up to 20GB on desktops with large hard drives, resulting in the size of the map being limited.
 
 ## Usage
-Try a demo of `Cauldron.js` on <...> or [install it on your own server](#Installation).
+Try a demo of `Cauldron.js` on <https://cauldron.vantezzen.io> or [install it on your own server](#Installation).
 
 ## Installation
 
