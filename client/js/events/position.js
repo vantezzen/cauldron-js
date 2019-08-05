@@ -23,9 +23,9 @@ export const handle = (event, data, metadata, client, clientIndex, server) => {
 
     const position = new Vec3(data.x, data.y, data.z);
     const lastPosition = new Vec3(prev.x, prev.y, prev.z)
-    const diff = position.minus(lastPosition)
+    // const diff = position.minus(lastPosition)
 
-    const maxDelta = 3;
+    // const maxDelta = 3;
 
     // if (diff.abs().x > maxDelta || diff.abs().y > maxDelta || diff.abs().z > maxDelta) {
         // Teleport player to new position
@@ -37,6 +37,9 @@ export const handle = (event, data, metadata, client, clientIndex, server) => {
             z: entityPosition.z,
             onGround: data.onGround
         })
+
+    // Relative movement is theoratically possible but as the server is so slow, it will result
+    // in incorrect player positions 
     // } else if (diff.distanceTo(new Vec3(0, 0, 0)) !== 0) {
     //     // Move player relative to current position
     //     const delta = diff.scaled(32).floored()

@@ -12,6 +12,8 @@ It still uses a NodeJS backend server that hosts the minecraft server but all wo
 By moving all processing and memory intensive work to the browser, `Cauldron.js` can be hosted on minimal server hardware while still allowing possibly hundreds of minecraft servers to be runnning on a single server.
 
 ## Why not?
+Tl:dr: Don't actually use CauldronJS to play Minecraft with your friends.
+
 1. Moving all processes into the browser requires the whole server code to be rewritten. 
 
     This is why `Cauldron.js` is still very bare-bones, having only a few elemental features and serving as a proof-of-concept.
@@ -20,7 +22,7 @@ By moving all processing and memory intensive work to the browser, `Cauldron.js`
 
     This results in actions sometimes needing up to a few seconds to get to the other clients, depending on the load.
 
-3. `Cauldron.js` saves all game data (worlds etc.) inside IndexedDB. This limits the storage availible to 5MB on most mobile devices and up to 20GB on desktops with large hard drives. This results in the size of the map being limited too.
+3. `Cauldron.js` saves all game data (worlds etc.) inside IndexedDB. This limits the storage availible to 5MB on most mobile devices and up to 20GB on desktops with large hard drives, resulting in the size of the map being limited.
 
 ## Usage
 Try a demo of `Cauldron.js` on <...> or [install it on your own server](#Installation).
