@@ -17,16 +17,11 @@ export const handle = (command, components, client, clientIndex, server) => {
         pitch: 0,
         flags: 0x00
     })
-    server.writeOthers(client.id, 'named_entity_spawn', {
+    server.writeOthers(client.id, 'entity_teleport', {
         entityId: client.id,
-        playerUUID: uuid,
-        type: 'player',
         x,
         y,
         z,
-        yaw: 0,
-        pitch: 0,
-        currentItem: 0,
-        metadata: []
-    })    
+        onGround: false
+    }) 
 }

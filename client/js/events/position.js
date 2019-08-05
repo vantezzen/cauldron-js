@@ -27,27 +27,28 @@ export const handle = (event, data, metadata, client, clientIndex, server) => {
 
     const maxDelta = 3;
 
-    if (diff.abs().x > maxDelta || diff.abs().y > maxDelta || diff.abs().z > maxDelta) {
+    // if (diff.abs().x > maxDelta || diff.abs().y > maxDelta || diff.abs().z > maxDelta) {
         // Teleport player to new position
+        const entityPosition = position.scaled(32).floored()
         server.writeOthers(client.id, 'entity_teleport', {
             entityId: client.id,
-            x: data.x,
-            y: data.y,
-            z: data.z,
+            x: entityPosition.x,
+            y: entityPosition.y,
+            z: entityPosition.z,
             onGround: data.onGround
         })
-    } else if (diff.distanceTo(new Vec3(0, 0, 0)) !== 0) {
-        // Move player relative to current position
-        const delta = diff.scaled(32).floored()
+    // } else if (diff.distanceTo(new Vec3(0, 0, 0)) !== 0) {
+    //     // Move player relative to current position
+    //     const delta = diff.scaled(32).floored()
 
-        server.writeOthers(client.id, 'rel_entity_move', {
-            entityId: client.id,
-            dX: delta.x,
-            dY: delta.y,
-            dZ: delta.z,
-            onGround: data.onGround
-        })
-    }
+    //     server.writeOthers(client.id, 'rel_entity_move', {
+    //         entityId: client.id,
+    //         dX: delta.x,
+    //         dY: delta.y,
+    //         dZ: delta.z,
+    //         onGround: data.onGround
+    //     })
+    // }
     // Send current chunk to player
     server.world.sendNearbyChunks(data.x, data.z, client.id)
 }

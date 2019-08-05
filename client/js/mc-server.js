@@ -9,6 +9,7 @@
  * @license     https://opensource.org/licenses/mit-license.php MIT License
  */
 import Debugger from 'debug'
+import Vec3 from 'vec3'
 import MCEvent from './event'
 import MCWorld from './world'
 import MCCommand from './command'
@@ -173,25 +174,30 @@ export default class MCServer {
                 this.world.sendNearbyChunks(data.x || 15, data.z || 15, client.id)
 
                 // Teleport player to new position
+                const entityPosition = new Vec3(
+                    data.x || 15,
+                    data.y + 15 || 101,
+                    data.z || 15
+                ).scaled(32).floored()
+
+                this.writeOthers(client.id, 'named_entity_spawn', {
+                    entityId: client.id,
+                    playerUUID: client.uuid,
+                    x: entityPosition.x,
+                    y: entityPosition.y,
+                    z: entityPosition.z,
+                    yaw: this.conv(data.yaw) || 0,
+                    pitch: this.conv(data.pitch) || 0,
+                    currentItem: 0,
+                    metadata: []
+                })
                 this.writeOthers(client.id, 'entity_teleport', {
                     entityId: client.id,
-                    x: data.x,
-                    y: data.y + 15,
-                    z: data.z,
+                    x: data.x || 15,
+                    y: data.y + 15 || 101,
+                    z: data.z || 15,
                     onGround: data.onGround
                 })
-                // this.writeOthers(client.id, 'named_entity_spawn', {
-                //     entityId: client.id,
-                //     playerUUID: client.uuid,
-                //     type: 'player',
-                //     x: data.x || 15,
-                //     y: data.y || 101,
-                //     z: data.z || 15,
-                //     yaw: this.conv(data.yaw) || 0,
-                //     pitch: this.conv(data.pitch) || 0,
-                //     currentItem: 0,
-                //     metadata: []
-                // })        
             });
 
 
@@ -210,27 +216,36 @@ export default class MCServer {
         });
 
         // Spawn other players
-        // for (const player of this.clients) {
-        //     if (player.id !== client.id) {
-        //         this.db.players.get(player.uuid)
-        //         .then(data => {
-        //             debug('Spawning other player to new client');
-        //             this.write(client.id, 'named_entity_spawn', {
-        //                 entityId: player.id,
-        //                 playerUUID: player.uuid,
-        //                 type: 'player',
-        //                 x: data.x,
-        //                 y: data.y,
-        //                 z: data.z,
-        //                 yaw: this.conv(data.yaw),
-        //                 pitch: this.conv(data.pitch),
-        //                 currentItem: 0,
-        //                 metadata: []
-        //             })
-        //         });
-                
-        //     }
-        // }
+        for (const player of this.clients) {
+            if (player.id !== client.id) {
+                const entityPosition = new Vec3(
+                    player.position.x || 15,
+                    player.position.y || 101,
+                    player.position.z || 15
+                ).scaled(32).floored()
+
+                this.write(client.id, 'named_entity_spawn', {
+                    entityId: player.id,
+                    playerUUID: player.uuid,
+                    x: entityPosition.x,
+                    y: entityPosition.y,
+                    z: entityPosition.z,
+                    yaw: this.conv(player.position.yaw) || 0,
+                    pitch: this.conv(player.position.pitch) || 0,
+                    currentItem: 0,
+                    metadata: []
+                })
+                this.write(client.id, 'entity_teleport', {
+                    entityId: player.id,
+                    x: player.position.x || 15,
+                    y: player.position.y || 101,
+                    z: player.position.z || 15,
+                    onGround: player.position.onGround
+                })
+            }
+        }
+        debug('Spawned other players for new client')
+
         this.event.handle('login', {}, {}, client, clientIndex, this)
     }
 
