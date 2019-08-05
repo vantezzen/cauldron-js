@@ -2,9 +2,9 @@ import Vec3 from 'vec3'
 import ChunkGen from 'prismarine-chunk'
 import rand from 'random-seed'
 
-const seed = 'A';
+const seed = 'A'
 
-export default function generation ({version}) {
+export default function generation ({ version }) {
   const Chunk = ChunkGen(version)
 
   function generateChunk (chunkX, chunkZ) {
@@ -17,7 +17,7 @@ export default function generation ({version}) {
         for (let y = 0; y < 128; y++) { // Nether only goes up to 128
           let block
           let data
-          let level = 50;
+          const level = 50
 
           if (y < bedrockheightbottom) block = 7
           else if (y < level) block = seedRand(50) === 0 ? 89 : 87
@@ -31,7 +31,7 @@ export default function generation ({version}) {
       }
     }
 
-    return chunk;
+    return chunk
   }
   return generateChunk
 }

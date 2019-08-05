@@ -28,16 +28,17 @@
     "socket.io": "^2.2.0",
     "socket.io-client": "^2.2.0",
     "spiralloop": "^1.0.2",
-    "tumult": "^3.0.14",
     "uint4": "^0.1.2",
     "vec3": "^0.1.3"
   },
   "scripts": {
     "start": "node index.js",
     "dev": "DEBUG=cauldron:* LOCATION=127.0.0.1 yarn start",
-    "watch": "webpack --watch"
+    "watch": "webpack --watch",
+    "lint": "standard --fix \"client/js/**/*.js\" \"index.js\""
   },
   "devDependencies": {
+    "standard": "^13.1.0",
     "webpack": "^4.38.0",
     "webpack-cli": "^3.3.6"
   }

@@ -1,8 +1,8 @@
 /**
  * Cauldron.js - Minecraft Server in your browser
- * 
+ *
  * events/index.js - Combining event handlers
- * 
+ *
  * @version     0.1.0
  * @copyright   Copyright vantezzen (https://github.com/vantezzen)
  * @link        https://github.com/vantezzen/cauldron-js
@@ -17,11 +17,11 @@ import * as chat from './chat'
 import * as settings from './settings'
 
 export default [
-    look,
-    positionLook,
-    position,
-    blockDig,
-    blockPlace,
-    chat,
-    settings,
+  look,
+  positionLook,
+  position,
+  blockDig,
+  blockPlace,
+  chat,
+  settings
 ]

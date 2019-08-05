@@ -1,8 +1,8 @@
 /**
  * Cauldron.js - Minecraft Server in your browser
- * 
+ *
  * commands/index.js - Combining command handlers
- * 
+ *
  * @version     0.1.0
  * @copyright   Copyright vantezzen (https://github.com/vantezzen)
  * @link        https://github.com/vantezzen/cauldron-js
@@ -13,7 +13,7 @@ import * as tp from './tp'
 import * as gamemode from './gamemode'
 
 export default [
-    ping,
-    tp,
-    gamemode
+  ping,
+  tp,
+  gamemode
 ]
