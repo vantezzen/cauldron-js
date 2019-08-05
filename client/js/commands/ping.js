@@ -1,4 +1,6 @@
 export const command = 'ping';
-export const handle = (command, components, id, uuid, server) => {
-    server.sendMessage(id, 'Pong');
+export const info = 'Ping - Pong';
+export const usage = '/ping'
+export const handle = (command, components, client, clientIndex, server) => {
+    server.sendMessage(client.id, 'Pong');
 }

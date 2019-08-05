@@ -1,7 +1,7 @@
 /**
  * Cauldron.js - Minecraft Server in your browser
  * 
- * event.js - MCEvent - Handle Minecraft Event
+ * event.js - MCEvent - Handle Minecraft chat commands
  * 
  * @version     0.1.0
  * @copyright   Copyright vantezzen (https://github.com/vantezzen)
@@ -19,23 +19,50 @@ export default class MCCommand {
 
         // Add command handlers
         for (const command of commands) {
-            this.commands[command.command] = command.handle;
+            this.addCommand(command.command, command.handle, command.info, command.usage)
         }
 
         debug('Constructed MCCommand with ' + Object.keys(this.commands).length + ' commands')
     }
 
+    // Add a new command handler
+    addCommand(command, handler, info, usage) {
+        this.commands[command] = {
+            handler,
+            info,
+            usage
+        };
+    }
+
     // Handle new command
-    handle(command, id, uuid) {
+    handle(command, client, clientIndex) {
         const commandComponents = command.split(' ')
         const mainCommand = commandComponents.shift();
 
         debug('Handling new command', mainCommand);
 
-        if (this.commands[mainCommand]) {
-            this.commands[mainCommand](mainCommand, commandComponents, id, uuid, this.server);
+        if (mainCommand === 'help') {
+            if (commandComponents.length === 0) {
+                this.server.sendMessage(client.id, 'Availible commands:');
+
+                for (const command of Object.keys(this.commands)) {
+                    this.server.sendMessage(client.id, `/${command} - ${this.commands[command].info}`);
+                }
+            } else if (commandComponents.length === 1) {
+                if (this.commands[commandComponents[0]]) {
+                    const cmd = commandComponents[0];
+                    this.server.sendMessage(client.id, `Usage: ${this.commands[cmd].usage}`);
+                } else {
+                    this.server.sendMessage(client.id, `Unknown command "${commandComponents[0]}"`);
+                }
+            } else {
+                this.server.sendMessage(client.id, 'Invalid number of arguments for help');
+                this.server.sendMessage(client.id, 'Usage: /help ([command])');
+            }
+        } else if (this.commands[mainCommand]) {
+            this.commands[mainCommand].handler(mainCommand, commandComponents, client, clientIndex, this.server);
         } else {
-            this.server.sendMessage(id, 'Unknown command');
+            this.server.sendMessage(client.id, 'Unknown command');
         }
     }
 }

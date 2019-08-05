@@ -111,14 +111,12 @@ const parseClassic = (message) => {
     }
 }
 
-export const handle = (event, data, metadata, id, uuid, server) => {
+export const handle = (event, data, metadata, client, clientIndex, server) => {
     if (data.message.substr(0,1) === '/') {
-        server.handleCommand(data.message.substr(1), id, uuid);
+        server.handleCommand(data.message.substr(1), client, clientIndex);
     } else {
-        const username = server.clients.find(el => el.id === id).username;
-
         let message = parseClassic(data.message)
-        message.text = `<${username}> ` + message.text;
+        message.text = `<${client.username}> ` + message.text;
         server.writeAll('chat', {
             message: JSON.stringify(message),
             position: 0

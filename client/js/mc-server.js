@@ -21,6 +21,8 @@ export default class MCServer {
         this.socket = socket; // Current socket connection to backend
         this.db = db; // Dexie database instance
         this.seed = seed;
+        this.version = version;
+        this.generator = generator;
         this.event = new MCEvent; // Event handler for minecraft client events
         this.world = new MCWorld(version, generator, this) // Overworld
         this.command = new MCCommand(this) // Handler for minecraft commands
@@ -34,6 +36,9 @@ export default class MCServer {
         // Keep client settings
         this.clientSettings = {};
 
+        // Load all plugins
+        this.loadPlugins();
+
         // Show current stats
         this.updateServerStats();
 
@@ -41,6 +46,15 @@ export default class MCServer {
         this.checkPerformance();
 
         debug('Started MC Server');
+    }
+
+    // Include all plugins inside the plugins/ directory
+    loadPlugins() {
+        const plugins = require.context('./plugins', true, /.*\.js$/);
+        plugins.keys().forEach((plugin) => {
+            const init = plugins(plugin).default;
+            init(this)
+        });
     }
 
     // Convert float (degrees) --> byte (1/256 "degrees"), needed for head rotation
@@ -86,7 +100,12 @@ export default class MCServer {
 
     // Handle new client connecting to server
     newClient(client) {
+        // Add additional info to client
+        client.gameMode = 1;
+
+        // Add client to clients list
         this.clients.push(client);
+        const clientIndex = this.clients.findIndex(el => el.id === client.id);
         this.clientChunks.set(client.id, new Set())
         this.updateServerStats();
         debug('New client connected with ID of', client.id);
@@ -134,18 +153,30 @@ export default class MCServer {
                 debug('Writing position package to new client');
                 this.write(client.id, 'position', {
                     x: data.x || 15,
-                    y: data.y || 101,
+                    y: data.y + 15 || 101,
                     z: data.z || 15,
                     yaw: data.yaw || 137,
                     pitch: data.pitch || 0,
                     flags: 0x00
                 })
 
+                this.clients[clientIndex].position = {
+                    x: data.x || 15,
+                    y: data.y + 15 || 101,
+                    z: data.z || 15,
+                    yaw: data.yaw || 137,
+                    pitch: data.pitch || 0,
+                    onGround: data.onGround || false,
+                }
+
+                // Send nearby chunks to client
+                this.world.sendNearbyChunks(data.x || 15, data.z || 15, client.id)
+
                 // Teleport player to new position
                 this.writeOthers(client.id, 'entity_teleport', {
                     entityId: client.id,
                     x: data.x,
-                    y: data.y,
+                    y: data.y + 15,
                     z: data.z,
                     onGround: data.onGround
                 })
@@ -200,6 +231,7 @@ export default class MCServer {
                 
         //     }
         // }
+        this.event.handle('login', {}, {}, client, clientIndex, this)
     }
 
     // Handle client disconnecting from server
@@ -214,12 +246,13 @@ export default class MCServer {
 
     // Handle event from minecraft client
     handleEvent(event, data, metadata, id, uuid) {
-        this.event.handle(event, data, metadata, id, uuid, this);
+        const client = this.clients.findIndex(el => el.id === id);
+        this.event.handle(event, data, metadata, this.clients[client], client, this);
     }
 
     // Handle command from player
-    handleCommand(command, id, uuid) {
-        this.command.handle(command, id, uuid);
+    handleCommand(command, client, clientIndex) {
+        this.command.handle(command, client, clientIndex);
     }
 
     // Send message to client

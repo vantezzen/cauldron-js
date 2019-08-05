@@ -1,7 +1,7 @@
 import Vec3 from 'vec3'
 
 export const event = 'block_place';
-export const handle = (event, data, metadata, id, uuid, server) => {
+export const handle = (event, data, metadata, client, clientIndex, server) => {
     if ((data.location.x === -1 && data.location.y === -1 && data.location.z === -1) || data.heldItem.blockId === -1) {
         // Invalid block placement
         return;

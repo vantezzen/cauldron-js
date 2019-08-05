@@ -1,13 +1,15 @@
 export const command = 'tp';
-export const handle = (command, components, id, uuid, server) => {
+export const info = 'Teleport yourself';
+export const usage = '/tp [x] [y] [z]'
+export const handle = (command, components, client, clientIndex, server) => {
     if (components.length !== 3) {
-        server.sendMessage(id, 'Usage: /tp [x] [y] [z]')
+        server.sendMessage(client.id, 'Usage: ' + usage)
         return;
     }
 
     const [ x, y, z ] = components
 
-    server.write(id, 'position', {
+    server.write(client.id, 'position', {
         x,
         y,
         z,
@@ -15,8 +17,8 @@ export const handle = (command, components, id, uuid, server) => {
         pitch: 0,
         flags: 0x00
     })
-    server.writeOthers(id, 'named_entity_spawn', {
-        entityId: id,
+    server.writeOthers(client.id, 'named_entity_spawn', {
+        entityId: client.id,
         playerUUID: uuid,
         type: 'player',
         x,

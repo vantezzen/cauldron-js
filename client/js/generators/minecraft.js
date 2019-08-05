@@ -1,6 +1,7 @@
 import Vec3 from 'vec3'
 import ChunkGen from 'prismarine-chunk'
 import tumult from 'tumult'
+import NoiseGen from 'noisejs'
 
 // Return true with a given chance
 const withChance = chance => {
@@ -114,22 +115,21 @@ const generatePond = (x, y, z, chunk) => {
 export default function generation({
     version,
     seed = 'Cauldron.JS',
-    detalization = 100,
-    minHeight = 0,
-    maxHeight = 200,
+    detalization = 50,
+    minHeight = 50,
+    maxHeight = 100,
 } = {}) {
     const Chunk = ChunkGen(version)
-    const elevation = new tumult.Perlin2(seed + 'elevation')
-    const roughness = new tumult.Perlin2(seed + 'roughness')
-    const detail = new tumult.Perlin2(seed + 'detail')
+    const Noise = new NoiseGen.Noise(seed);
+    // const elevation = new tumult.Perlin2(seed + 'elevation')
+    // const roughness = new tumult.Perlin2(seed + 'roughness')
+    // const detail = new tumult.Perlin2(seed + 'detail')
 
     function generateNoise(x, z) {
-        const noise =
-        (this.noise.perlin2(x / this.detalization, z / this.detalization) + 1) *
-        0.5;
-        const range = this.maxHeight - this.minHeight;
+        const noise = (Noise.perlin2(x / detalization, z / detalization) + 1) * 0.5;
+        const range = maxHeight - minHeight;
 
-        return noise * range + this.minHeight;
+        return Math.round(noise * range + minHeight);
     }
 
     function generateChunk(chunkX, chunkZ) {
@@ -137,8 +137,8 @@ export default function generation({
         
         for (let x = 0; x < 16; x++) {
             for (let z = 0; z < 16; z++) {
-                let height = Math.round(Math.abs(elevation.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100) + (roughness.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100)) * detail.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100) * 16 + 64));
-
+                let height = generateNoise(chunkX * 16 + x, chunkZ * 16 + z)
+                // let height = Math.round(Math.abs(elevation.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100) + (roughness.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100)) * detail.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100) * 16 + 64));
                 // let height = Math.round(Math.abs(noise.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100))) + 20;
                 if (height > 200) {
                     height = 200;

@@ -38,7 +38,7 @@ function formatBytes(bytes, decimals = 2) {
 export default class MCWorld extends EventEmitter {
     constructor(version, generator, server) {
         super();
-        
+
         this.server = server;
 
         this._map = new Map(); // Saving a map of current chunks
@@ -51,10 +51,10 @@ export default class MCWorld extends EventEmitter {
 
         // Initialise localForage for storing minecraft world
         localForage.config({
-            name        : 'world',
-            version     : 1.0,
-            storeName   : 'world_land',
-            description : 'Cauldron.JS Minecraft World'
+            name: 'world',
+            version: 1.0,
+            storeName: 'world_land',
+            description: 'Cauldron.JS Minecraft World'
         });
 
         // Save world every 10 seconds
@@ -80,25 +80,58 @@ export default class MCWorld extends EventEmitter {
         }
     }
 
+    cleanLoadedChunks() {
+        const maxChunks = 50;
+
+        // Keep number of loaded chunks below maxChunks
+        const entries = this._map.entries();
+        while (this._map.size > maxChunks) {
+            this._map.delete(entries.next().value[0])
+        }
+    }
+
     // Save world to localForage
     save() {
         debug('Saving ' + this._map.size + ' chunks');
+
         this._map.forEach((chunk, id) => {
-            const dump = chunk.dump(0xFFFF, false);
+            const dump = chunk.dump();
 
             // Convert dump to string
-            let data = ''; 
-            dump.forEach(function(byte) {
+            let data = '';
+            dump.forEach(function (byte) {
                 data += String.fromCharCode(byte)
             });
 
-            localForage.setItem('CHUNK-' + id, data);
+            localForage.setItem('r-' + id, data);
         })
+        this.cleanLoadedChunks();
         this.updateWorldStats();
     }
 
     forEachChunk(fn) {
         this._initializer = fn;
+    }
+
+    // Send chunks that are near a player to the client
+    sendNearbyChunks(x, z, id) {
+        const chunkX = x >> 4;
+        const chunkZ = z >> 4;
+        // Chunk radius to send to client
+        const distance = 5;
+        for (let x = chunkX - distance; x < chunkX + distance; x++) {
+            for (let z = chunkZ - distance; z < chunkZ + distance; z++) {
+                const chunkId = `${x}:${z}`;
+                if (!this.server.clientChunks.get(id).has(chunkId)) {
+                    this.server.clientChunks.get(id).add(chunkId)
+                    this.getChunk(x, z).then(chunk => {
+                        this.sendChunk(id, x, z, chunk.dump())
+                    });
+                }
+            }
+        }
+
+        this.cleanLoadedChunks();
     }
 
     // Get prismarine-chunk object for a chunk
@@ -107,7 +140,7 @@ export default class MCWorld extends EventEmitter {
             const chunkID = `${chunkX}:${chunkZ}`;
             if (!this._map.has(chunkID)) {
                 let chunk;
-                const data = await localForage.getItem('CHUNK-' + chunkID);
+                const data = await localForage.getItem('r-' + chunkID);
                 if (data) {
                     // Load data from localStorage
                     chunk = new this.Chunk();
@@ -116,8 +149,17 @@ export default class MCWorld extends EventEmitter {
                     for (let i = 0, strLen = data.length; i < strLen; i++) {
                         dump[i] = data.charCodeAt(i);
                     }
-    
-                    chunk.load(Buffer.from(dump), 0xFFFF, false);
+
+                    chunk.load(Buffer.from(dump));
+
+                    // Fill chunk with light
+                    for (let x = 0; x < 16; x++) {
+                        for (let z = 0; z < 16; z++) {
+                            for (let y = 0; y < 256; y++) {
+                                chunk.setSkyLight(new Vec3(x, y, z), 15)
+                            }
+                        }
+                    }
                 } else {
                     // Generate new chunk
                     chunk = this.generator(chunkX, chunkZ);
@@ -129,7 +171,7 @@ export default class MCWorld extends EventEmitter {
         })
     }
 
-    async setBlock (x, y, z, block) {
+    async setBlock(x, y, z, block) {
         const chunkX = x >> 4;
         const chunkZ = z >> 4;
         const chunk = await this.getChunk(chunkX, chunkZ);
@@ -137,7 +179,7 @@ export default class MCWorld extends EventEmitter {
         this.emit('changed', chunkX, chunkZ);
     };
 
-    getBlock (x, y, z) {
+    getBlock(x, y, z) {
         return new Promise(async resolve => {
             const chunkX = x >> 4;
             const chunkZ = z >> 4;

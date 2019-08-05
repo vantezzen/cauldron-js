@@ -1,15 +1,21 @@
 export const event = 'position_look';
-export const handle = (event, data, metadata, id, uuid, server) => {
-    server.db.players.update(uuid, {
+export const handle = (event, data, metadata, client, clientIndex, server) => {
+    const update = {
         x: data.x,
         y: data.y,
         z: data.z,
         yaw: data.yaw,
         pitch: data.pitch,
         onGround: data.onGround
-    })
-    server.writeOthers(id, 'entity_teleport', {
-        entityId: id,
+    }
+    server.db.players.update(client.uuid, update)
+    server.clients[clientIndex].position = {
+        ...server.clients[clientIndex].position,
+        ...update
+    }
+    
+    server.writeOthers(client.id, 'entity_teleport', {
+        entityId: client.id,
         x: data.x,
         y: data.y,
         z: data.z,

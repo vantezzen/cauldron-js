@@ -1,5 +1,5 @@
 export const event = 'settings';
 
-export const handle = (event, data, metadata, id, uuid, server) => {
-    server.clientSettings[id] = data;
+export const handle = (event, data, metadata, client, clientIndex, server) => {
+    server.clientSettings[client.id] = data;
 }

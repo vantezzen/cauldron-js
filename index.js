@@ -92,7 +92,11 @@ io.on('connection', socket => {
 
   // Write a packet to a minecraft client
   socket.on('write', (client, type, data) => {
-    servers[socket.id].clients[client].write(type, data);
+    if (servers[socket.id] 
+      && servers[socket.id].clients[client] 
+      && servers[socket.id].clients[client].write) {
+      servers[socket.id].clients[client].write(type, data);
+    }
   })
 
   // Stop proxy server when socket disconnected

@@ -1,32 +1,37 @@
 export const command = 'gamemode';
-export const handle = (command, components, id, uuid, server) => {
+export const info = 'Update your gamemode';
+export const usage = '/gamemode [0|1|2|3|survival|creative|adventure|spectator]'
+export const handle = (command, components, client, clientIndex, server) => {
     if (components.length !== 1) {
-        server.sendMessage(id, 'Usage: /gamemode [gamemode]')
+        server.sendMessage(client.id, 'Usage: /gamemode [gamemode]')
         return;
     }
 
-    let [ gamemode ] = components
+    let [ gameMode ] = components
 
-    if (gamemode != Number(gamemode)) {
-        if (gamemode === 'survival') {
-            gamemode = 0;
-        } else if (gamemode === 'creative') {
-            gamemode = 1;
-        } else if (gamemode === 'adventure') {
-            gamemode = 2;
-        } else if (gamemode === 'spectator') {
-            gamemode = 3;
+    if (gameMode != Number(gameMode)) {
+        if (gameMode === 'survival') {
+            gameMode = 0;
+        } else if (gameMode === 'creative') {
+            gameMode = 1;
+        } else if (gameMode === 'adventure') {
+            gameMode = 2;
+        } else if (gameMode === 'spectator') {
+            gameMode = 3;
         } else {
-            server.sendMessage(id, 'Invalid gamemode')
+            server.sendMessage(client.id, 'Invalid gamemode')
             return;
         }
-    } else if (gamemode > 3) {
-        server.sendMessage(id, 'Invalid gamemode')
+    } else if (gameMode > 3) {
+        server.sendMessage(client.id, 'Invalid gamemode')
         return;
     }
 
-    server.write(id, 'game_state_change', {
+    server.clients[clientIndex].gameMode = gameMode
+
+    server.write(client.id, 'game_state_change', {
         reason: 3,
-        gameMode: gamemode
+        gameMode
     })
+    server.sendMessage(client.id, 'Gamemode updated')
 }

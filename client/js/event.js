@@ -18,24 +18,26 @@ export default class MCEvent {
 
         // Add event handlers
         for (const event of events) {
-            if (!this.events[event.event]) {
-                this.events[event.event] = [];
-            }
-
-            this.events[event.event].push(
-                event.handle
-            );
+            this.addHandler(event.event, event.handle)
         }
 
         debug('Constructed MCEvent for ' + Object.keys(this.events).length + ' events')
     }
 
+    addHandler(event, handler) {
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
+
+        this.events[event].push(handler);
+    }
+
     // Handle new event
-    handle(event, data, metadata, id, uuid, server) {
+    handle(event, data, metadata, client, clientIndex, server) {
         // debug('Handling new MCEvent', event, id);
         if (this.events[event]) {
             for (const handler of this.events[event]) {
-                handler(event, data, metadata, id, uuid, server);
+                handler(event, data, metadata, client, clientIndex, server);
             }
         }
     }
