@@ -1,9 +1,8 @@
 PHASE 1, essentials:
-- Show other players
+- ✓
 
 PHASE 2, making it playable:
-- Make better world generator
-- Implement inventory storage
+- Improve "minecraft" world generator
 - Implement survival (decrement item counter etc.)
 - Implement crafting
 - Implement chests

@@ -18,27 +18,29 @@ const withChance = chance => {
  * @param {*} chunk Chunk to cluster to
  */
 const generateOreCluster = (x, y, z, clusterChance, block, chunk, dirtHeight) => {
-  chunk.setBlockType(new Vec3(x, y, z), block)
+  if (y < dirtHeight) {
+    chunk.setBlockType(new Vec3(x, y, z), block)
 
-  if (withChance(clusterChance) && x < 16) {
-    generateOreCluster(x + 1, y, z, clusterChance, block, chunk, dirtHeight)
-  }
-  if (withChance(clusterChance) && x > 0) {
-    generateOreCluster(x - 1, y, z, clusterChance, block, chunk, dirtHeight)
-  }
+    if (withChance(clusterChance) && x < 16) {
+      generateOreCluster(x + 1, y, z, clusterChance, block, chunk, dirtHeight)
+    }
+    if (withChance(clusterChance) && x > 0) {
+      generateOreCluster(x - 1, y, z, clusterChance, block, chunk, dirtHeight)
+    }
 
-  if (withChance(clusterChance) && y < dirtHeight - 3) {
-    generateOreCluster(x, y + 1, z, clusterChance, block, chunk, dirtHeight)
-  }
-  if (withChance(clusterChance) && y > 1) {
-    generateOreCluster(x, y - 1, z, clusterChance, block, chunk, dirtHeight)
-  }
+    if (withChance(clusterChance) && y < dirtHeight - 3) {
+      generateOreCluster(x, y + 1, z, clusterChance, block, chunk, dirtHeight)
+    }
+    if (withChance(clusterChance) && y > 1) {
+      generateOreCluster(x, y - 1, z, clusterChance, block, chunk, dirtHeight)
+    }
 
-  if (withChance(clusterChance) && z < 16) {
-    generateOreCluster(x, y, z + 1, clusterChance, block, chunk, dirtHeight)
-  }
-  if (withChance(clusterChance) && z > 0) {
-    generateOreCluster(x, y, z - 1, clusterChance, block, chunk, dirtHeight)
+    if (withChance(clusterChance) && z < 16) {
+      generateOreCluster(x, y, z + 1, clusterChance, block, chunk, dirtHeight)
+    }
+    if (withChance(clusterChance) && z > 0) {
+      generateOreCluster(x, y, z - 1, clusterChance, block, chunk, dirtHeight)
+    }
   }
 }
 
@@ -79,7 +81,7 @@ const generateTree = (x, y, z, chunk) => {
   }
 }
 
-// Generate pond currently not in use as it crashes the server
+// Generate pond currently not in use as it needs to be reworked
 // const generatePond = (x, y, z, chunk) => {
 //   let xMax = Math.floor(Math.random() * 3) + 3
 //   let xMin = Math.floor(Math.random() * 3) + 3
@@ -99,10 +101,10 @@ const generateTree = (x, y, z, chunk) => {
 //     zMin = z
 //   }
 
-//   const pondLength = (xMax - xMin) > (zMax - zMin) ? (xMax - xMin) : (zMax - zMin)
+//   const pondLength = (xMax + xMin) > (zMax + zMin) ? (xMax + xMin) : (zMax + zMin)
 
-//   for (let xOff = xMin; xOff >= xMax; xOff++) {
-//     for (let zOff = zMin; zOff >= zMax; zOff++) {
+//   for (let xOff = -xMin; xOff <= xMax; xOff++) {
+//     for (let zOff = -zMin; zOff <= zMax; zOff++) {
 //       const depth = Math.floor(Math.abs((((xOff + zOff) / 2) / pondLength) - 0.5) * 4)
 
 //       for (let yOff = 0; yOff <= depth; yOff++) {
@@ -121,6 +123,8 @@ export default function generation ({
 } = {}) {
   const Chunk = ChunkGen(version)
   const Noise = new NoiseGen.Noise(seed)
+
+  // Noise functions for alternative height generation methods
   // const elevation = new tumult.Perlin2(seed + 'elevation')
   // const roughness = new tumult.Perlin2(seed + 'roughness')
   // const detail = new tumult.Perlin2(seed + 'detail')
@@ -138,15 +142,21 @@ export default function generation ({
     for (let x = 0; x < 16; x++) {
       for (let z = 0; z < 16; z++) {
         let height = generateNoise(chunkX * 16 + x, chunkZ * 16 + z)
+
+        // Alternative height generation methods
         // let height = Math.round(Math.abs(elevation.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100) + (roughness.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100)) * detail.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100) * 16 + 64));
         // let height = Math.round(Math.abs(noise.gen((chunkX * 16 + x) / 100, (chunkZ * 16 + z) / 100))) + 20;
+
+        // Keep height between 200 and 10
         if (height > 200) {
           height = 200
         } else if (height < 10 || isNaN(height)) {
           height = 10
         }
 
+        // Dirt layer should be between 2 and 8 layer thick
         const dirtHeight = height - (Math.floor(Math.random() * 6) + 2)
+        // Grass layer is at height limit
         const grassHeight = height
 
         // Generate bedrock layer
@@ -169,10 +179,14 @@ export default function generation ({
 
         // Generate dirt layer
         for (let y = dirtHeight; y < grassHeight; y++) {
-          chunk.setBlockType(new Vec3(x, y, z), 3)
+          if (chunk.getBlockType(new Vec3(x, y, z)) === 0) {
+            chunk.setBlockType(new Vec3(x, y, z), 3)
+          }
         }
         // Generate grass layer
-        chunk.setBlockType(new Vec3(x, grassHeight, z), 2)
+        if (chunk.getBlockType(new Vec3(x, grassHeight, z)) === 0) {
+          chunk.setBlockType(new Vec3(x, grassHeight, z), 2)
+        }
 
         // Generate trees
         if (z < 13 && z > 4 && x < 13 && x > 4 && withChance(1 / 32)) {

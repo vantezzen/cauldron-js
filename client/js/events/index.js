@@ -8,6 +8,7 @@
  * @link        https://github.com/vantezzen/cauldron-js
  * @license     https://opensource.org/licenses/mit-license.php MIT License
  */
+import * as armAnimation from './arm_animation'
 import * as look from './look'
 import * as positionLook from './position_look'
 import * as position from './position'
@@ -17,6 +18,7 @@ import * as chat from './chat'
 import * as settings from './settings'
 
 export default [
+  armAnimation,
   look,
   positionLook,
   position,

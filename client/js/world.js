@@ -121,10 +121,11 @@ export default class MCWorld extends EventEmitter {
     const chunkZ = z >> 4
     // Chunk radius to send to client
     const distance = 5
-    
+
+    // Send nearby chunks in spiralloop to send nearest chunks first
     Spiralloop([distance * 2, distance * 2], (xPos, zPos) => {
-      const x = chunkX - distance + xPos;
-      const z = chunkZ - distance + zPos;
+      const x = chunkX - distance + xPos
+      const z = chunkZ - distance + zPos
 
       const chunkId = `${x}:${z}`
       if (!this.server.clientChunks.get(id).has(chunkId)) {
@@ -208,14 +209,6 @@ export default class MCWorld extends EventEmitter {
       const chunk = await this.getChunk(chunkX, chunkZ)
       resolve(chunk.getBlockType(new Vec3(x & 0x0f, y, z & 0x0f)))
     })
-  }
-
-  setAddition (x, y, z, type) {
-    // const chunkX = x >> 4;
-    // const chunkZ = z >> 4;
-    // this.getChunk(chunkX, chunkZ).setAddition(x & 0x0f, y, z & 0x0f, type);
-    // this.emit('changed', chunkX, chunkZ);
-    return this
   }
 
   async setLightBlock (x, y, z, light) {

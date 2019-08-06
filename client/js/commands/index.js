@@ -10,10 +10,12 @@
  */
 import * as ping from './ping'
 import * as tp from './tp'
+import * as motd from './motd'
 import * as gamemode from './gamemode'
 
 export default [
   ping,
   tp,
+  motd,
   gamemode
 ]

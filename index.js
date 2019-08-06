@@ -116,6 +116,12 @@ io.on('connection', socket => {
     }
   })
 
+  socket.on('motd', motd => {
+    if (servers[socket.id] && servers[socket.id].server) {
+      servers[socket.id].server.motd = motd
+    }
+  })
+
   socket.on('stop', () => {
     if (servers[socket.id]) {
       stopServer(socket.id, 'You stopped the server. Please restart the server to continue playing.')

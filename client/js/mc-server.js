@@ -151,20 +151,22 @@ export default class MCServer {
 
           data = {}
         }
+        const pos = {
+          x: data.x || 15,
+          y: data.y || 101,
+          z: data.z || 15
+        }
+
         debug('Writing position package to new client')
         this.write(client.id, 'position', {
-          x: data.x || 15,
-          y: data.y + 15 || 101,
-          z: data.z || 15,
+          ...pos,
           yaw: data.yaw || 137,
           pitch: data.pitch || 0,
           flags: 0x00
         })
 
         this.clients[clientIndex].position = {
-          x: data.x || 15,
-          y: data.y + 15 || 101,
-          z: data.z || 15,
+          ...pos,
           yaw: data.yaw || 137,
           pitch: data.pitch || 0,
           onGround: data.onGround || false
@@ -175,9 +177,9 @@ export default class MCServer {
 
         // Teleport player to new position
         const entityPosition = new Vec3(
-          data.x || 15,
-          data.y + 15 || 101,
-          data.z || 15
+          pos.x,
+          pos.y,
+          pos.z
         ).scaled(32).floored()
 
         this.writeOthers(client.id, 'named_entity_spawn', {
@@ -193,10 +195,8 @@ export default class MCServer {
         })
         this.writeOthers(client.id, 'entity_teleport', {
           entityId: client.id,
-          x: data.x || 15,
-          y: data.y + 15 || 101,
-          z: data.z || 15,
-          onGround: data.onGround
+          onGround: data.onGround,
+          ...pos
         })
       })
 
