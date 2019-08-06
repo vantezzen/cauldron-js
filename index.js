@@ -123,14 +123,14 @@ io.on('connection', socket => {
   })
 
   socket.on('stop', () => {
-    if (servers[socket.id]) {
+    if (servers[socket.id] && servers[socket.id].server) {
       stopServer(socket.id, 'You stopped the server. Please restart the server to continue playing.')
     }
   })
 
   // Stop proxy server when socket disconnected
   socket.on('disconnect', () => {
-    if (servers[socket.id]) {
+    if (servers[socket.id] && servers[socket.id].server) {
       stopServer(socket.id, 'You closed your browser tab - this will stop your Minecraft server. Please reopen the tab to restart your server.')
     }
   })

@@ -26,7 +26,7 @@ if (!window.localStorage.debug) {
 
 // Create debugger for server
 const debug = Debugger('cauldron:main')
-debug('Cauldron.JS - Minecraft Server in your browser.\nSource code availible at https://github.com/vantezen/cauldron-js')
+debug('Cauldron.JS - Minecraft Server in your browser.\nSource code availible at https://github.com/vantezzen/cauldron-js')
 
 // Open database
 const db = openDatabase()
@@ -101,6 +101,7 @@ const startServer = (version, motd, generator, seed) => {
 }
 
 // Test if settings already saved => Start automatically
+document.getElementById('loading').style.display = 'none'
 if (window.localStorage.getItem('setting.version')) {
   const version = window.localStorage.getItem('setting.version')
   const motd = window.localStorage.getItem('setting.motd')
