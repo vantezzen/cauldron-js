@@ -1,3 +1,7 @@
+> **Note**
+> 
+> This experiment is archived. Take a look at https://github.com/vantezzen/electric-squid for an updated experiment of running a Minecraft server in the browser
+
 <p align="center">
     <img src="client/icon.png" height="300"><br />
 </p>
